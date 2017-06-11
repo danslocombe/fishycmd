@@ -13,7 +13,15 @@ import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 
 stripQuotes :: String -> String
-stripQuotes = filter (\x -> x /= '"')
+stripQuotes = filter (/= '"')
+
+stripDoubleBackslash :: String -> String
+stripDoubleBackslash [] = []
+stripDoubleBackslash ('\\':'\\':xs) = '\\' : stripDoubleBackslash xs
+stripDoubleBackslash (x:xs) = x : stripDoubleBackslash xs
+
+parseFilename :: String -> String
+parseFilename = stripQuotes . stripDoubleBackslash
 
 getHiddenChar = fmap (chr.fromEnum) c_getch
 foreign import ccall unsafe "conio.h getch"
@@ -83,22 +91,26 @@ bigTrie :: CompleteState -> [Trie CharWeight]
 bigTrie state = getFileTries state ++ getHistoryTries state
 
 buildTries :: [FilePath] -> [Trie CharWeight]
-buildTries files = foldr insertCW [] (fmap (stripQuotes . show) files)
+buildTries files = foldr insertCW [] (fmap (parseFilename . show) files)
 
 complete :: CompleteState -> String
--- For now
-complete state = fmap fromCharWeight $ lookupCW s ts
+complete state = if length s > 0 
+  then fmap fromCharWeight $ lookupCW s ts
+  else ""
   where s = getString state
         ts = bigTrie state
 
-prompt :: String
-prompt = ">>> "
+prompt :: IO String
+prompt = do 
+  pwd <- getCurrentDirectory
+  return $ parseFilename (show pwd)  ++ ">>> "
 
 drawCompletion :: CompleteState -> IO ()
 drawCompletion state = do
   let s = getString state
       ts = getFileTries state
-  let drawstr = prompt ++ s
+  promptS <- prompt
+  let drawstr = promptS ++ s
   putStr $ '\r' : drawstr
   setCursorColumn $ length drawstr
   clearFromCursorToLineEnd
