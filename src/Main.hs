@@ -5,10 +5,11 @@ module Main where
 import Trie
 import System.Directory
 import System.Console.ANSI
+import System.IO
 import Data.Char (chr, ord)
 import Foreign.C.Types
 import System.Cmd
-import Control.Monad.Trans.State.Lazy
+import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 
 stripQuotes :: String -> String
@@ -105,3 +106,4 @@ drawCompletion state = do
   putStr $ drop (length s) (complete state)
   setSGR [Reset]
   setCursorColumn $ length drawstr
+  hFlush stdout
