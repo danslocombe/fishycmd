@@ -1,12 +1,19 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
+
 module Main where
 
 import Trie
 import System.Directory
 import System.Console.ANSI
 import Data.Char (chr, ord)
+import Foreign.C.Types
 
 stripQuotes :: String -> String
 stripQuotes = filter (\x -> x /= '"')
+
+getHiddenChar = fmap (chr.fromEnum) c_getch
+foreign import ccall unsafe "conio.h getch"
+  c_getch :: IO CInt
 
 main :: IO ()
 main = do
@@ -21,15 +28,25 @@ main = do
 updateIO :: String -> [Trie CharWeight] -> IO ()
 updateIO s ts = do
   drawCompletion s ts
-  c <- getChar
-  str <- return $ case ord c of
-    10 -> ""                     -- Newline
-    127 -> take (length s - 1) s -- Backspace
-    6 -> complete s ts           -- Control+F (form feed)
-    x -> s ++ [c]
-  setCursorColumn 0
-  clearFromCursorToLineEnd
-  updateIO str ts
+  c <- getHiddenChar
+  -- putStrLn $ '\n' : (show $ ord c)
+  match <- return $ case ord c of
+    10  -> Just ""                      -- Newline
+    13  -> Just ""                      -- Newline (Windows)
+    8   -> Just $ take (length s - 1) s -- Backspace (Windows)
+    127 -> Just $ take (length s - 1) s -- Backspace (Windows Ctr+backspace)
+    6   -> Just $ complete s ts         -- Complete (Windows Ctr+F form feed)
+    12  -> Just ""                      -- Clear screen (Ctr+L)
+    3   -> Nothing                      -- Exit (Windows Ctr+C)
+    4   -> Nothing                      -- EOF (Windows Ctr+D)
+    x   -> Just $ s ++ [c]
+  
+  case match of 
+    Just str -> do
+      setCursorColumn 0
+      clearFromCursorToLineEnd
+      updateIO str ts
+    Nothing -> return ()
 
 buildTries :: [FilePath] -> [Trie CharWeight]
 buildTries files = foldr insertCW [] (fmap (stripQuotes . show) files)
