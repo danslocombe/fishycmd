@@ -19,3 +19,4 @@ executable trie
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5
                      , directory >= 1.3
+                     , ansi-terminal >= 0.6.3
