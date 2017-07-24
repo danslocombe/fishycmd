@@ -1,13 +1,23 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DefaultSignatures #-}
+
 module Trie where
 
-data Trie a = TrieNode a [Trie a] deriving (Show, Eq, Ord)
+import GHC.Generics
+import Data.Serialize
+
+data Trie a = TrieNode a [Trie a] deriving (Generic, Show, Eq, Ord)
+
+instance (Serialize a) => Serialize (Trie a)
 
 type Comp   a b = a -> b -> Bool
 type Update a b = a -> b -> b
 type New    a b = a -> b
 
+data CharWeight = CharWeight Char Int deriving (Generic, Show, Eq)
 
-data CharWeight = CharWeight Char Int deriving (Show, Eq)
+instance Serialize CharWeight
+
 instance Ord CharWeight where
   (CharWeight _ p) `compare` (CharWeight _ p') = p `compare` p'
 
