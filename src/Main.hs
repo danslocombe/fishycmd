@@ -8,11 +8,12 @@ import Draw
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 import Data.Semigroup ((<>))
+import Data.List.Zipper (empty)
 import System.Console.ANSI
 import System.Directory
 import System.Environment
 import System.IO
-import Options.Applicative
+import Options.Applicative hiding (empty)
 
 data FishyOptions = FishyOptions
   { clearHistory :: Bool }
@@ -35,7 +36,7 @@ main = do
   -- putStrLn $ concatMap (((++)"\n") . stripQuotes . show) files
   let fileTries = buildTries files
   complete <- if clearHistory options 
-    then return $ CompleteState [] fileTries ""
+    then return $ CompleteState [] fileTries empty False
     else loadState fileTries
   repeaty complete
 

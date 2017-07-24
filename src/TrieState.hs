@@ -11,13 +11,15 @@ import GHC.Generics
 import Data.Serialize
 import Data.ByteString (readFile, writeFile)
 import Data.Either
+import Data.List.Zipper
 import System.Directory
 import System.Environment
 
 data CompleteState = CompleteState 
-  { getHistoryTries :: [Trie CharWeight]
-  , getFileTries    :: [Trie CharWeight]
-  , getString       :: String
+  { getHistoryTries   :: [Trie CharWeight]
+  , getFileTries      :: [Trie CharWeight]
+  , getPrompt         :: Zipper Char
+  , getControlPrepped :: Bool
   } deriving (Show)
 
 stateFilename :: String
@@ -43,7 +45,6 @@ loadState fileTries = do
   d <- readFile $ filepath ++ stateFilename
   let d' = decode d
   complete <- return $ case d' of
-    (Right decoded) -> CompleteState decoded fileTries ""
-    (Left err) -> CompleteState [] fileTries ""
-  -- let complete = fromRight [] (decode d)
+    (Right decoded) -> CompleteState decoded fileTries empty False
+    (Left err) -> CompleteState [] fileTries empty False
   return complete

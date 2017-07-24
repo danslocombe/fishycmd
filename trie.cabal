@@ -26,3 +26,4 @@ executable trie
                      , cereal >= 0.5.4.0
                      , bytestring >= 0.10.8.1
                      , optparse-applicative == 0.13.2.0
+                     , ListZipper == 1.2.0.2
