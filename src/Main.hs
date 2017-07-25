@@ -31,6 +31,12 @@ parseOptions = FishyOptions
     <> short 'd'
     <> help "Set debug mode" )
 
+opts :: ParserInfo FishyOptions
+opts = info (parseOptions <**> helper)
+  ( fullDesc
+  <> progDesc "Run the shell"
+  <> header "FishyCMD - A wrapper for CMD" )
+
 main :: IO ()
 main = do
   options <- execParser opts
@@ -45,13 +51,12 @@ main = do
   complete <- if clearHistory options 
     then cleanState debug [] fileTries
     else loadState debug fileTries
-  repeaty complete
+  fishyLoop complete
 
-opts :: ParserInfo FishyOptions
-opts = info (parseOptions <**> helper)
-  ( fullDesc
-  <> progDesc "Run the shell"
-  <> header "FishyCMD - A wrapper for CMD" )
+fishyLoop :: CompleteState -> IO ()
+fishyLoop state = do
+  (res, state') <- runStateT updateIOState state
+  if res then return () else fishyLoop state'
 
 entryString :: String
 -- entryString = "FishyCMD"

@@ -27,7 +27,8 @@ data CompleteState = CompleteState
   , getPrompt         :: Zipper Char
   , getControlPrepped :: Bool
   , getCurrentDir     :: FilePath
-  , getDebug             :: Bool
+  , getDebug          :: Bool
+  , getHistoryLogs    :: Zipper String
   } deriving (Show)
 
 ifDebug :: IO () -> ST.StateT CompleteState IO ()
@@ -39,7 +40,13 @@ ifDebug f = do
   
 cleanState :: Bool -> [Trie CharWeight] -> [Trie CharWeight] -> IO CompleteState
 cleanState debug history files = do
-  CompleteState history files <$> genPathTries <*> return empty <*> return False <*> getCurrentDirectory <*> return debug
+  CompleteState history files 
+    <$> genPathTries 
+    <*> return empty 
+    <*> return False 
+    <*> getCurrentDirectory 
+    <*> return debug
+    <*> return empty
 
 genPathTries :: IO [Trie CharWeight]
 genPathTries = do

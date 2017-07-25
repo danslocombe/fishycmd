@@ -22,23 +22,24 @@ data CommandInput = Text (Zipper Char)
                   | Exit
                   | Execute String
                   | PrepControlChar
+                  | HistoryBack
+                  | HistoryForward
 
 getHiddenChar = fmap (chr.fromEnum) c_getch
 foreign import ccall unsafe "conio.h getch"
   c_getch :: IO CInt
 
-repeaty :: CompleteState -> IO ()
-repeaty state = do
-  (res, state') <- runStateT updateIOState state
-  if res then return () else repeaty state'
-
+-- TODO refactor this (too large)
 updateIOState :: StateT CompleteState IO Bool
 updateIOState = do
   state <- get
+  -- lift $ putStrLn ("UpdateState: " ++ show (getHistoryLogs state))
   let p = getPrompt state
+      historyLogs = getHistoryLogs state
+      s = toList p
   lift $ drawCompletion state
   c <- lift getHiddenChar
-  -- lift $ putStrLn $ show $ ord c
+  -- ifDebug (putStrLn $ show $ ord c)
   case matchChar state c of 
     Text prompt -> do
       lift $ setCursorColumn 0
@@ -48,19 +49,32 @@ updateIOState = do
     Exit -> return True
     Run -> do
       lift $ putStr "\n"
-      let s = toList p
       exitcode <- execCommand s
       lift $ putStr "\n"
-      let history = insertCW s $ getHistoryTries state
-      let state' = state {getHistoryTries = history, getPrompt = empty}
+      let historyTries = insertCW s $ getHistoryTries state
+      let state' = state { getHistoryTries = historyTries
+        , getPrompt = empty
+        , getHistoryLogs = push s historyLogs }
       put state'
       lift $ saveState state
       return False
-    Execute command -> lift $ do
-      exitcode <- system command
-      return False
+    Execute command -> do
+      exitcode <- lift $ system command
+      let state' = state { getHistoryLogs = push s historyLogs }
+      put state'
+      lift $ return False
     PrepControlChar -> do
       put state {getControlPrepped = True}
+      lift $ return False
+    HistoryBack -> do
+      backHistory
+      state' <- get
+      ifDebug $ putStrLn ("\nBack History: " ++ show (getHistoryLogs state'))
+      lift $ return False
+    HistoryForward -> do
+      forwardHistory
+      state' <- get
+      ifDebug $ putStrLn ("\nForwards History: " ++ show (getHistoryLogs state'))
       lift $ return False
 
 data SpecialCommand = CD
@@ -109,7 +123,52 @@ matchChar state c = case ord c of
   224 -> PrepControlChar              -- Prep character
   75  -> ifControlPrepped $ left p    -- Left if prepped
   77  -> ifControlPrepped $ right p   -- Right if prepped
+  72  -> if getControlPrepped state then HistoryBack else Text (push c p)
+  80  -> if getControlPrepped state then HistoryForward else Text (push c p)
   x   -> Text $ push c p
   where p@(Zip s s') = getPrompt state
         ifControlPrepped r = Text $
           if getControlPrepped state then r else push c p
+
+-- TODO factor out some of following
+backHistory :: StateT CompleteState IO ()
+backHistory = do
+    state <- get
+    let s = toList $ getPrompt state
+        history = getHistoryLogs state
+        (history', mText) = popBotZipper history
+        (text, history'') = case mText of
+          Just newText -> (newText, case s of
+            "" -> history'
+            _  -> pushTopZipper s history')
+          Nothing      -> (s, history')
+        prompt = Zip (reverse text) []
+    put state { getHistoryLogs = history'', getPrompt = prompt }
+
+forwardHistory :: StateT CompleteState IO ()
+forwardHistory = do
+    state <- get
+    let s = toList $ getPrompt state
+        history = getHistoryLogs state
+        (history', mText) = popTopZipper history
+        (text, history'') = case mText of
+          Just newText -> (newText, case s of
+            "" -> history'
+            _  -> pushBotZipper s history')
+          Nothing      -> (s, history')
+        prompt = Zip (reverse text) []
+    put state { getHistoryLogs = history'', getPrompt = prompt }
+
+pushTopZipper :: a -> Zipper a -> Zipper a
+pushTopZipper y (Zip xs ys) = Zip xs (y : ys)
+
+pushBotZipper :: a -> Zipper a -> Zipper a
+pushBotZipper x (Zip xs ys) = Zip (x : xs) ys
+
+popTopZipper :: Zipper a -> (Zipper a, Maybe a)
+popTopZipper (Zip xs (y:ys)) = (Zip xs ys, Just y)
+popTopZipper (Zip xs []) = (Zip xs [], Nothing)
+
+popBotZipper :: Zipper a -> (Zipper a, Maybe a)
+popBotZipper (Zip (x:xs) ys) = (Zip xs ys, Just x)
+popBotZipper (Zip [] ys) = (Zip [] ys, Nothing)
