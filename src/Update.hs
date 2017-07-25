@@ -2,9 +2,10 @@
 
 module Update where
 
+import Draw
+import FileTries
 import Trie
 import TrieState
-import Draw
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
@@ -29,24 +30,33 @@ getHiddenChar = fmap (chr.fromEnum) c_getch
 foreign import ccall unsafe "conio.h getch"
   c_getch :: IO CInt
 
--- TODO refactor this (too large)
-updateIOState :: StateT CompleteState IO Bool
+updateIOState :: StateT FishyState IO Bool
 updateIOState = do
+  -- Scrape info from state
   state <- get
-  -- lift $ putStrLn ("UpdateState: " ++ show (getHistoryLogs state))
   let p = getPrompt state
       historyLogs = getHistoryLogs state
       s = toList p
+
+  -- Draw completion then yield for next char
   lift $ drawCompletion state
   c <- lift getHiddenChar
+
+  -- This shows the ascii character of the input
   -- ifDebug (putStrLn $ show $ ord c)
+
   case matchChar state c of 
+    -- Update using new prompt state
     Text prompt -> do
       lift $ setCursorColumn 0
       lift clearFromCursorToLineEnd
       put state {getPrompt = prompt, getControlPrepped = False}
       return False
+
+    -- Exit the shell
     Exit -> return True
+
+    -- Run what is entered by user
     Run -> do
       lift $ putStr "\n"
       exitcode <- execCommand s
@@ -58,49 +68,60 @@ updateIOState = do
       put state'
       lift $ saveState state
       return False
+
+    -- Execute some other command
     Execute command -> do
       exitcode <- lift $ system command
       let state' = state { getHistoryLogs = push s historyLogs }
       put state'
       lift $ return False
+
+    -- Some inputs (up, down, etc) are represented by two characters
+    -- The 'control character' then some other, this is called on input of the control char
     PrepControlChar -> do
       put state {getControlPrepped = True}
       lift $ return False
+
+    -- Move back through history
     HistoryBack -> do
       backHistory
       state' <- get
       ifDebug $ putStrLn ("\nBack History: " ++ show (getHistoryLogs state'))
       lift $ return False
+
+    -- Move forwards through history
     HistoryForward -> do
       forwardHistory
       state' <- get
       ifDebug $ putStrLn ("\nForwards History: " ++ show (getHistoryLogs state'))
       lift $ return False
 
+-- We have an idea of 'special' commands that hold side effects
+-- these are handled by the shell rather than external calls
+
 data SpecialCommand = CD
 
 specialCommandMap = [("cd", CD)]
 
-runSpecial :: [String] -> SpecialCommand -> StateT CompleteState IO ()
+runSpecial :: [String] -> SpecialCommand -> StateT FishyState IO ()
 runSpecial args cmd = do
   ifDebug $ putStrLn "Running special command..."
   case cmd of
     CD -> case args of
-      -- [dir] -> fishyCD dir >> lift (return ())
       [dir] -> fishyCD dir
       _ -> lift $ putStrLn "Error: fishy input"
 
--- fishyCD :: String -> StateT CompleteState IO ExitCode
-fishyCD :: String -> StateT CompleteState IO ()
+fishyCD :: String -> StateT FishyState IO ()
 fishyCD arg = lift $ do 
   exists <- doesPathExist arg
   if exists
   then setCurrentDirectory arg
   else putStrLn "Error: fishy directory"
 
-execCommand :: String -> StateT CompleteState IO ()
+execCommand :: String -> StateT FishyState IO ()
 execCommand c = case splitOn " " c of 
   (x:xs) -> do
+    -- Try and match against a special command, otherwise act normal
     let special = lookup x specialCommandMap
     case special of
       Just specialCmd -> runSpecial xs specialCmd
@@ -109,7 +130,8 @@ execCommand c = case splitOn " " c of
   -- Blank input
   _ -> lift $ return ()
 
-matchChar :: CompleteState -> Char -> CommandInput
+-- Hardcoded windows inputs
+matchChar :: FishyState -> Char -> CommandInput
 matchChar state c = case ord c of
   10  -> Run                          -- Newline
   13  -> Run                          -- Newline (Windows)
@@ -130,8 +152,8 @@ matchChar state c = case ord c of
         ifControlPrepped r = Text $
           if getControlPrepped state then r else push c p
 
--- TODO factor out some of following
-backHistory :: StateT CompleteState IO ()
+-- TODO factor out some of following common in both functions
+backHistory :: StateT FishyState IO ()
 backHistory = do
     state <- get
     let s = toList $ getPrompt state
@@ -145,7 +167,7 @@ backHistory = do
         prompt = Zip (reverse text) []
     put state { getHistoryLogs = history'', getPrompt = prompt }
 
-forwardHistory :: StateT CompleteState IO ()
+forwardHistory :: StateT FishyState IO ()
 forwardHistory = do
     state <- get
     let s = toList $ getPrompt state
@@ -158,6 +180,9 @@ forwardHistory = do
           Nothing      -> (s, history')
         prompt = Zip (reverse text) []
     put state { getHistoryLogs = history'', getPrompt = prompt }
+
+
+-- Functions for treating zipper as two stacks
 
 pushTopZipper :: a -> Zipper a -> Zipper a
 pushTopZipper y (Zip xs ys) = Zip xs (y : ys)

@@ -1,13 +1,14 @@
 module Main where
 
+import Draw
 import FileTries
 import Trie
 import TrieState
 import Update
-import Draw
 
-import Control.Monad.Trans.State.Strict
+import Control.Monad
 import Control.Monad.Trans.Class
+import Control.Monad.Trans.State.Strict
 import Data.Semigroup ((<>))
 import Data.List.Zipper (empty)
 import System.Console.ANSI
@@ -39,27 +40,33 @@ opts = info (parseOptions <**> helper)
 
 main :: IO ()
 main = do
+  -- Fetch argvs
   options <- execParser opts
   let debug = getDebugOption options
-  sp <- statePath
-  createDirectoryIfMissing True sp
+
+  -- Create state path if it's missing
+  createDirectoryIfMissing True <$> statePath
+
+  -- Draw entry header
   putStrLn entryString
-  currentDir <- getCurrentDirectory
-  files <- listDirectory currentDir
-  -- putStrLn $ concatMap (((++)"\n") . stripQuotes . show) files
-  let fileTries = buildTries files
-  complete <- if clearHistory options 
+
+  -- For now files trie is static
+  fileTries <- buildTries <$> (listDirectory =<< getCurrentDirectory)
+
+  -- Load state from file unless clearHistory is set
+  state <- if clearHistory options 
     then cleanState debug [] fileTries
     else loadState debug fileTries
-  fishyLoop complete
 
-fishyLoop :: CompleteState -> IO ()
+  -- Enter main loop
+  fishyLoop state
+
+fishyLoop :: FishyState -> IO ()
 fishyLoop state = do
   (res, state') <- runStateT updateIOState state
   if res then return () else fishyLoop state'
 
 entryString :: String
--- entryString = "FishyCMD"
 entryString = "\n\
 \ ______________       ______         ______________  __________ \n\
 \ ___  ____/__(_)_________  /______  ___  ____/__   |/  /__  __ \\\n\

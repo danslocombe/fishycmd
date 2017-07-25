@@ -20,7 +20,7 @@ import Control.Monad
 import qualified Control.Monad.Trans.State.Strict as ST
 import Control.Monad.Trans.Class
 
-data CompleteState = CompleteState 
+data FishyState = FishyState 
   { getHistoryTries   :: [Trie CharWeight]
   , getFileTries      :: [Trie CharWeight]
   , getPathTries      :: [Trie CharWeight]
@@ -31,16 +31,16 @@ data CompleteState = CompleteState
   , getHistoryLogs    :: Zipper String
   } deriving (Show)
 
-ifDebug :: IO () -> ST.StateT CompleteState IO ()
+ifDebug :: IO () -> ST.StateT FishyState IO ()
 ifDebug f = do
   state <- ST.get
   lift $ if getDebug state
   then f
   else return ()
   
-cleanState :: Bool -> [Trie CharWeight] -> [Trie CharWeight] -> IO CompleteState
+cleanState :: Bool -> [Trie CharWeight] -> [Trie CharWeight] -> IO FishyState
 cleanState debug history files = do
-  CompleteState history files 
+  FishyState history files 
     <$> genPathTries 
     <*> return empty 
     <*> return False 
@@ -69,13 +69,13 @@ statePath = do
   appdata <- getEnv "APPDATA" 
   return $ appdata ++ "\\fishycmd\\"
 
-saveState :: CompleteState -> IO ()
+saveState :: FishyState -> IO ()
 saveState s = do
   filepath <- statePath
   let d = encode $ getHistoryTries s
   writeFile (filepath ++ stateFilename) $ d
 
-loadState :: Bool -> [Trie CharWeight] -> IO CompleteState
+loadState :: Bool -> [Trie CharWeight] -> IO FishyState
 loadState debug fileTries = do
   filepath <- statePath
   d <- readFile $ filepath ++ stateFilename
