@@ -1,5 +1,6 @@
 module Draw where
 
+import FileTries
 import Trie
 import TrieState
 
@@ -9,29 +10,26 @@ import System.Environment
 import System.Cmd
 import System.Console.ANSI
 import System.IO
+import Data.List.Split
 
-stripQuotes :: String -> String
-stripQuotes = filter (/= '"')
-
-stripDoubleBackslash :: String -> String
-stripDoubleBackslash [] = []
-stripDoubleBackslash ('\\':'\\':xs) = '\\' : stripDoubleBackslash xs
-stripDoubleBackslash (x:xs) = x : stripDoubleBackslash xs
-
-parseFilename :: String -> String
-parseFilename = stripQuotes . stripDoubleBackslash
+fromTries :: [Trie CharWeight] -> String -> String
+fromTries ts s = fmap fromCharWeight $ lookupCW s ts
 
 complete :: CompleteState -> String
-complete state = if length s > 0 
-  then fmap fromCharWeight $ lookupCW s ts
-  else ""
+complete state = case length splitS of
+  0     -> ""
+  1     -> defOr s $ fromTries (bigTrie state) s
+  _     -> let x = last splitS in 
+    defOr x $ s ++ drop (length x) (fromTries (getFileTries state) x)
   where 
+    splitS :: [String]
+    splitS = splitOn " " s
     s :: String
     s = toList $ getPrompt state
-    ts = bigTrie state
+    defOr s f = if s == "" then "" else f
 
 bigTrie :: CompleteState -> [Trie CharWeight]
-bigTrie state = getFileTries state ++ getHistoryTries state
+bigTrie state = getFileTries state ++ getHistoryTries state ++ getPathTries state
 
 prePrompt :: IO String
 prePrompt = do 

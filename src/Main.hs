@@ -1,5 +1,6 @@
 module Main where
 
+import FileTries
 import Trie
 import TrieState
 import Update
@@ -16,7 +17,8 @@ import System.IO
 import Options.Applicative hiding (empty)
 
 data FishyOptions = FishyOptions
-  { clearHistory :: Bool }
+  { clearHistory :: Bool
+  , getDebugOption :: Bool }
 
 parseOptions :: Parser FishyOptions
 parseOptions = FishyOptions
@@ -24,10 +26,15 @@ parseOptions = FishyOptions
      ( long "clear-history"
     <> short 'c'
     <> help "Clear command history" )
+  <*> switch
+     ( long "debug"
+    <> short 'd'
+    <> help "Set debug mode" )
 
 main :: IO ()
 main = do
   options <- execParser opts
+  let debug = getDebugOption options
   sp <- statePath
   createDirectoryIfMissing True sp
   putStrLn entryString
@@ -36,8 +43,8 @@ main = do
   -- putStrLn $ concatMap (((++)"\n") . stripQuotes . show) files
   let fileTries = buildTries files
   complete <- if clearHistory options 
-    then return $ CompleteState [] fileTries empty False
-    else loadState fileTries
+    then cleanState debug [] fileTries
+    else loadState debug fileTries
   repeaty complete
 
 opts :: ParserInfo FishyOptions
@@ -45,9 +52,6 @@ opts = info (parseOptions <**> helper)
   ( fullDesc
   <> progDesc "Run the shell"
   <> header "FishyCMD - A wrapper for CMD" )
-
-buildTries :: [FilePath] -> [Trie CharWeight]
-buildTries files = foldr insertCW [] (fmap (parseFilename . show) files)
 
 entryString :: String
 -- entryString = "FishyCMD"
