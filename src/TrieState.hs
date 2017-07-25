@@ -31,13 +31,15 @@ data FishyState = FishyState
   , getHistoryLogs    :: Zipper String
   } deriving (Show)
 
+-- Run some arbitrary IO if we are running in debug mode
 ifDebug :: IO () -> ST.StateT FishyState IO ()
 ifDebug f = do
   state <- ST.get
   lift $ if getDebug state
-  then f
-  else return ()
+    then f
+    else return ()
   
+-- Initialize a new 'clean' fishy state
 cleanState :: Bool -> [Trie CharWeight] -> [Trie CharWeight] -> IO FishyState
 cleanState debug history files = do
   FishyState history files 
@@ -48,6 +50,7 @@ cleanState debug history files = do
     <*> return debug
     <*> return empty
 
+-- TODO do this concurrently
 genPathTries :: IO [Trie CharWeight]
 genPathTries = do
   path <- getEnv "PATH"
@@ -59,22 +62,25 @@ genPathTries = do
 stateFilename :: String
 stateFilename = "trie.file"
 
-debugPrintEnvironment :: IO ()
-debugPrintEnvironment = do
-  env <- getEnvironment
-  (mapM (\(x, y) -> putStrLn(x ++ "  " ++ y)) env) >> return ()
-
 statePath :: IO FilePath
 statePath = do
   appdata <- getEnv "APPDATA" 
   return $ appdata ++ "\\fishycmd\\"
 
+-- Unused
+printEnvironment :: IO ()
+printEnvironment = do
+  env <- getEnvironment
+  (mapM (\(x, y) -> putStrLn(x ++ "  " ++ y)) env) >> return ()
+
+-- Save state by serializing history tries
 saveState :: FishyState -> IO ()
 saveState s = do
   filepath <- statePath
   let d = encode $ getHistoryTries s
   writeFile (filepath ++ stateFilename) $ d
 
+-- Load state by deserializing history tries
 loadState :: Bool -> [Trie CharWeight] -> IO FishyState
 loadState debug fileTries = do
   filepath <- statePath
@@ -82,5 +88,5 @@ loadState debug fileTries = do
   let d' = decode d
   complete <- case d' of
     (Right decoded) -> cleanState debug decoded fileTries
-    (Left err) -> cleanState debug [] fileTries
+    (Left  err)     -> cleanState debug []      fileTries
   return complete
