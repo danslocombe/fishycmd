@@ -7,6 +7,7 @@ import Trie
 
 import GHC.Generics
 import Data.Serialize
+import Safe
 import System.Directory
 import System.Environment
     

@@ -6,6 +6,7 @@ import Draw
 import FileTries
 import Trie
 import TrieState
+import Complete
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
@@ -140,6 +141,8 @@ matchChar state c = case ord c of
   127 -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows Ctr+backspace)
   6   -> Text $ Zip (reverse (complete state)) []
                                       -- Complete (Windows Ctr+F form feed)
+  9   -> Text $ Zip (reverse (partialComplete state)) []
+                                      -- Partial complete (Tab)
   12  -> Execute "cls"                -- Clear screen (Ctr+L)
   3   -> Exit                         -- Exit (Windows Ctr+C)
   4   -> Exit                         -- EOF (Windows Ctr+D)
