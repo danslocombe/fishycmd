@@ -120,6 +120,7 @@ fishyCD arg = lift $ do
 
 execCommand :: String -> StateT FishyState IO ()
 execCommand c = case splitOn " " c of 
+  -- Extract first 'word'
   (x:xs) -> do
     -- Try and match against a special command, otherwise act normal
     let special = lookup x specialCommandMap

@@ -22,17 +22,22 @@ complete state = case length splitS of
   0 -> ""
 
   -- For a single 'word' use all tries
-  1 -> defOr s $ fromTries (bigTrie state) s
+  1 -> defOr s $ completeAll
 
-  -- For multiple 'words', only use filenames
-  _ -> let x = last splitS in 
-    defOr x $ s ++ drop (length x) (fromTries (getFileTries state) x)
+  -- For multiple 'words'
+  _ -> if length completeAll > length s
+    -- Prefer history, otherwise complete on filenames
+    then completeAll
+    -- Otherwise use files in current directory
+    else let x = last splitS in 
+      defOr x $ s ++ drop (length x) (fromTries (getFileTries state) x)
   where 
     splitS :: [String]
     splitS = splitOn " " s
     s :: String
     s = toList $ getPrompt state
     defOr s f = if s == "" then "" else f
+    completeAll = fromTries (bigTrie state) s
 
 bigTrie :: FishyState -> [Trie CharWeight]
 bigTrie state = getFileTries state ++ getHistoryTries state ++ getPathTries state
