@@ -62,19 +62,21 @@ updateIOState = do
       lift $ putStr "\n"
       exitcode <- execCommand s
       lift $ putStr "\n"
-      let historyTries = insertCW s $ getHistoryTries state
-      let state' = state { getHistoryTries = historyTries
+      state' <- get
+      let historyTries = insertCW s $ getHistoryTries state'
+      let state'' = state' { getHistoryTries = historyTries
         , getPrompt = empty
         , getHistoryLogs = push s historyLogs }
-      put state'
+      put state''
       lift $ saveState state
       return False
 
     -- Execute some other command
     Execute command -> do
       exitcode <- lift $ system command
-      let state' = state { getHistoryLogs = push s historyLogs }
-      put state'
+      state' <- get
+      let state'' = state { getHistoryLogs = push s historyLogs }
+      put state''
       lift $ return False
 
     -- Some inputs (up, down, etc) are represented by two characters
@@ -108,16 +110,21 @@ runSpecial :: [String] -> SpecialCommand -> StateT FishyState IO ()
 runSpecial args cmd = do
   ifDebug $ putStrLn "Running special command..."
   case cmd of
-    CD -> case args of
-      [dir] -> fishyCD dir
-      _ -> lift $ putStrLn "Error: fishy input"
+    CD -> fishyCD $ foldr1 (\x y -> x ++ " " ++ y) args
 
 fishyCD :: String -> StateT FishyState IO ()
-fishyCD arg = lift $ do 
-  exists <- doesPathExist arg
+fishyCD arg = do 
+  ifDebug $ putStrLn ("Cd ing to \"" ++ arg ++ "\"")
+  exists <- lift $ doesPathExist arg
   if exists
-  then setCurrentDirectory arg
-  else putStrLn "Error: fishy directory"
+  then do
+    lift $ setCurrentDirectory arg
+    dir <- lift $ getCurrentDirectory
+    files <- lift $ listDirectory dir
+    state <- get
+    fileTries' <- lift $ buildFileTries dir
+    put state {getFileTries = fileTries'}
+  else lift $ putStrLn "Error: fishy directory"
 
 execCommand :: String -> StateT FishyState IO ()
 execCommand c = case splitOn " " c of 

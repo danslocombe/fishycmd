@@ -50,8 +50,8 @@ main = do
   -- Draw entry header
   putStrLn entryString
 
-  -- For now files trie is static
-  fileTries <- buildTries <$> (listDirectory =<< getCurrentDirectory)
+  -- Get initial file tries
+  fileTries <- join $ buildFileTries <$> getCurrentDirectory
 
   -- Load state from file unless clearHistory is set
   state <- if clearHistory options 

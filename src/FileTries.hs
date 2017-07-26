@@ -36,6 +36,14 @@ buildTries files = foldr insertCW [] $ fmap parseFilename files
 fromCharWeight :: CharWeight -> Char
 fromCharWeight (CharWeight c _) = c
 
+buildFileTries :: String -> IO [Trie CharWeight]
+buildFileTries dir = buildTries <$> (listDirectory =<< getCurrentDirectory)
+
+escapeSpace :: String -> String
+escapeSpace = concatMap (\x -> case x of 
+    ' ' -> "\\ "
+    y -> [y])
+
 -- Trie functions for CharWeight
 
 compCW :: Char -> CharWeight -> Bool
