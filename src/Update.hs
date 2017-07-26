@@ -110,9 +110,15 @@ runSpecial :: [String] -> SpecialCommand -> StateT FishyState IO ()
 runSpecial args cmd = do
   ifDebug $ putStrLn "Running special command..."
   case cmd of
-    CD -> fishyCD $ foldr1 (\x y -> x ++ " " ++ y) args
+    CD -> let arg = (case args of
+                       [] -> ""
+                       [""] -> ""
+                       xs -> foldr1 (\x y -> x ++ " " ++ y) xs)
+      in fishyCD arg
+
 
 fishyCD :: String -> StateT FishyState IO ()
+fishyCD "" = lift $ (putStrLn =<< getCurrentDirectory)
 fishyCD arg = do 
   ifDebug $ putStrLn ("Cd ing to \"" ++ arg ++ "\"")
   exists <- lift $ doesPathExist arg
