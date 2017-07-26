@@ -43,7 +43,7 @@ updateIOState = do
   c <- lift getHiddenChar
 
   -- This shows the ascii character of the input
-  -- ifDebug (putStrLn $ show $ ord c)
+  ifDebug (putStrLn $ show $ ord c)
 
   case matchChar state c of 
     -- Update using new prompt state
@@ -147,6 +147,8 @@ matchChar state c = case ord c of
   77  -> ifControlPrepped $ right p   -- Right if prepped
   72  -> if getControlPrepped state then HistoryBack else Text (push c p)
   80  -> if getControlPrepped state then HistoryForward else Text (push c p)
+  71  -> ifControlPrepped $ Zip [] (toList p) -- Home
+  79  -> ifControlPrepped $ Zip (reverse $ toList p) [] -- End
   x   -> Text $ push c p
   where p@(Zip s s') = getPrompt state
         ifControlPrepped r = Text $
