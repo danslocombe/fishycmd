@@ -6,6 +6,7 @@
 module Complete where
 
 import Completer
+import FileCompleter
 import StringTries
 import Trie
 import TrieState
@@ -16,10 +17,6 @@ import Data.List.Split
 import Data.List (maximumBy)
 import Data.Maybe
 import qualified Data.Map.Lazy as Map
-
--- instance Completer [Trie CharWeight] where
-  -- type CompleteType [Trie CharWeight] = Char
-  -- complete = fromTries
 
 instance Completer Char [Trie CharWeight] where
   complete = fromTries
@@ -44,14 +41,14 @@ fishyComplete state currentDir = case length splitS of
     then completeAll
     -- Otherwise use files in current directory
     else let x = last splitS in 
-      defOr x $ s ++ drop (length x) (fromTries (getFileTries state) x)
+      defOr x $ s ++ drop (length x) (complete (getFileCompleter state) x)
   where 
     splitS :: [String]
     splitS = splitOn " " s
     s :: String
     s = toList $ getPrompt state
     defOr s f = if s == "" then "" else f
-    completeAll = rankTries (map StringCompleter $ bigTrie state currentDir) s
+    completeAll = rankTries (allCompleters state currentDir) s
 
 -- Used for tab
 fishyPartialComplete :: FishyState -> String -> String
@@ -80,8 +77,9 @@ rankTries cs p = fromMaybe p $ listToMaybe candidates
   where candidates = filter (\x -> length x > length p) 
                    $ map (\(StringCompleter x) -> complete x p) cs
 
-bigTrie :: FishyState -> String -> [[Trie CharWeight]]
-bigTrie state currentDir = [getFileTries state 
-  , Map.findWithDefault [] currentDir (getLocalizedHistoryTries state)
-  , getHistoryTries state
-  , getPathTries state]
+allCompleters :: FishyState -> String -> [StringCompleter]
+allCompleters state currentDir = 
+  [ StringCompleter $ Map.findWithDefault [] currentDir (getLocalizedHistoryTries state)
+  , StringCompleter $ getFileCompleter state 
+  , StringCompleter $ getHistoryTries state
+  , StringCompleter $ getPathTries state]

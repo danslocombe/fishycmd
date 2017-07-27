@@ -57,13 +57,10 @@ main = do
   -- Draw entry header
   putStrLn entryString
 
-  -- Get initial file tries
-  fileTries <- join $ buildFileTries <$> getCurrentDirectory
-
   -- Load state from file unless clearHistory is set
   state <- if getClearHistoryOption options 
-    then cleanState debug verbose [] Map.empty fileTries
-    else loadState debug verbose fileTries
+    then cleanState debug verbose [] Map.empty
+    else loadState debug verbose
 
   -- Enter main loop
   fishyLoop state

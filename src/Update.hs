@@ -2,11 +2,12 @@
 
 module Update where
 
+import Complete
 import Draw
+import FileCompleter
 import StringTries
 import Trie
 import TrieState
-import Complete
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
@@ -32,8 +33,17 @@ getHiddenChar = fmap (chr.fromEnum) c_getch
 foreign import ccall unsafe "conio.h getch"
   c_getch :: IO CInt
 
+rebuildFileCompleter :: StateT FishyState IO ()
+rebuildFileCompleter = do
+  state <- get
+  fileCompleter <- lift $ createFileCompleter "" (toList $ getPrompt state)
+  put $ state {getFileCompleter  = fileCompleter}
+
 updateIOState :: StateT FishyState IO Bool
 updateIOState = do
+  -- TODO THIS IS REALLY SLOW
+  -- don't do every update
+  rebuildFileCompleter
   -- Scrape info from state
   state <- get
   let p = getPrompt state
@@ -131,10 +141,11 @@ fishyCD arg = do
   then do
     lift $ setCurrentDirectory arg
     dir <- lift $ getCurrentDirectory
-    files <- lift $ listDirectory dir
-    state <- get
-    fileTries' <- lift $ buildFileTries dir
-    put state {getFileTries = fileTries'}
+    lift $ return ()
+    -- files <- lift $ listDirectory dir
+    -- state <- get
+    -- fileTries' <- lift $ buildFileTries dir
+    -- put state {getFileTries = fileTries'}
   else lift $ putStrLn "Error: fishy directory"
 
 execCommand :: String -> StateT FishyState IO ()

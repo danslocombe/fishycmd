@@ -22,7 +22,6 @@ drawCompletion state = do
   let s :: String
       s = toList p
       p@(Zip pl pr) = getPrompt state
-      ts = getFileTries state
   currentDir <- getCurrentDirectory
 
   -- Fetch prePrompt

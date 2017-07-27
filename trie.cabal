@@ -31,7 +31,6 @@ executable trie
                      , safe >= 0.3.14
                      , containers == 0.5.7.1
                      , regex-posix >= 0.95.2
-                     -- , regex-tdfa >= 1.2.2
   other-modules:       Draw
                      , StringTries
                      , Trie

@@ -5,6 +5,7 @@ module TrieState where
 
 import Trie
 import StringTries
+import FileCompleter
 
 import Prelude
 
@@ -27,8 +28,8 @@ import qualified Data.ByteString as BS
 data FishyState = FishyState 
   { getHistoryTries          :: [Trie CharWeight]
   , getLocalizedHistoryTries :: Map.Map FilePath [Trie CharWeight]
-  , getFileTries             :: [Trie CharWeight]
   , getPathTries             :: [Trie CharWeight]
+  , getFileCompleter         :: FileCompleter
   , getPrompt                :: Zipper Char
   , getControlPrepped        :: Bool
   , getCurrentDir            :: FilePath
@@ -53,10 +54,11 @@ ifDebug f = do
     else return ()
   
 -- Initialize a new 'clean' fishy state
-cleanState :: Bool -> Bool -> [Trie CharWeight] -> Map.Map FilePath [Trie CharWeight] -> [Trie CharWeight] -> IO FishyState
-cleanState debug verbose history localized files = do
-  FishyState history localized files 
+cleanState :: Bool -> Bool -> [Trie CharWeight] -> Map.Map FilePath [Trie CharWeight] -> IO FishyState
+cleanState debug verbose history localized = do
+  FishyState history localized
     <$> genPathTries 
+    <*> createFileCompleter "" "" 
     <*> return empty 
     <*> return False 
     <*> getCurrentDirectory 
@@ -99,8 +101,8 @@ saveState s = do
   BS.writeFile (filepath ++ stateFilename) $ encode sstate
 
 -- Load state by deserializing history tries
-loadState :: Bool -> Bool -> [Trie CharWeight] -> IO FishyState
-loadState debug verbose fileTries = do
+loadState :: Bool -> Bool -> IO FishyState
+loadState debug verbose = do
   filepath <- statePath
   let readPath = filepath ++ stateFilename
   if verbose 
@@ -125,9 +127,9 @@ loadState debug verbose fileTries = do
       if verbose 
         then putStrLn "Success!"
         else return ()
-      cleanState debug verbose h l fileTries
+      cleanState debug verbose h l
     (Left err) -> do
       if verbose 
         then putStrLn "Failed! Creating blank state"
         else return ()
-      cleanState debug verbose [] Map.empty fileTries
+      cleanState debug verbose [] Map.empty
