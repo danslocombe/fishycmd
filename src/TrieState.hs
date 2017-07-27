@@ -12,12 +12,14 @@ import GHC.Generics
 import Data.Serialize
 import Data.ByteString (readFile, writeFile)
 import Data.Either
+import Data.Maybe (listToMaybe, catMaybes)
 import Data.List.Zipper
 import System.Directory
 import System.Environment
 import Data.List.Split
 import Control.Monad
 import Control.Monad.Trans.Class
+import Text.Regex.Posix ((=~))
 import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Lazy as Map
 
@@ -67,8 +69,10 @@ genPathTries = do
   path <- getEnv "PATH"
   let pathSplit = splitOn ";" path
   validPaths <- filterM doesPathExist pathSplit
-  files <- mapM listDirectory validPaths
-  return $ buildTries $ concat files
+  files <- concat <$> mapM listDirectory validPaths
+  let removeExe s = take (length s - 4) s
+      files' = map removeExe $ filter (\x -> x =~ "(.+)\\.exe$") files
+  return $ buildTries $ files'
   
 stateFilename :: String
 stateFilename = "trie.file"
