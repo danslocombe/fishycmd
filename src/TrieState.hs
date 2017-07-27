@@ -30,6 +30,7 @@ data FishyState = FishyState
   , getControlPrepped        :: Bool
   , getCurrentDir            :: FilePath
   , getDebug                 :: Bool
+  , getVerbose               :: Bool
   , getHistoryLogs           :: Zipper String
   } deriving (Show)
 
@@ -49,14 +50,15 @@ ifDebug f = do
     else return ()
   
 -- Initialize a new 'clean' fishy state
-cleanState :: Bool -> [Trie CharWeight] -> Map.Map FilePath [Trie CharWeight] -> [Trie CharWeight] -> IO FishyState
-cleanState debug history localized files = do
+cleanState :: Bool -> Bool -> [Trie CharWeight] -> Map.Map FilePath [Trie CharWeight] -> [Trie CharWeight] -> IO FishyState
+cleanState debug verbose history localized files = do
   FishyState history localized files 
     <$> genPathTries 
     <*> return empty 
     <*> return False 
     <*> getCurrentDirectory 
     <*> return debug
+    <*> return verbose
     <*> return empty
 
 -- TODO do this concurrently
@@ -86,16 +88,30 @@ printEnvironment = do
 saveState :: FishyState -> IO ()
 saveState s = do
   filepath <- statePath
-  let sstate = SerializableState (getHistoryTries s) (getLocalizedHistoryTries s)
+  let verbose = getVerbose s
+      writePath = filepath ++ stateFilename
+      sstate = SerializableState (getHistoryTries s) (getLocalizedHistoryTries s)
   writeFile (filepath ++ stateFilename) $ encode sstate
 
 -- Load state by deserializing history tries
-loadState :: Bool -> [Trie CharWeight] -> IO FishyState
-loadState debug fileTries = do
+loadState :: Bool -> Bool -> [Trie CharWeight] -> IO FishyState
+loadState debug verbose fileTries = do
   filepath <- statePath
-  d <- readFile $ filepath ++ stateFilename
+  let readPath = filepath ++ stateFilename
+  if verbose 
+    then putStr $ "Reading state from: \"" ++ readPath ++ "\"..."
+    else return ()
+  d <- readFile $ readPath
   let d' = decode d
   complete <- case d' of
-    (Right (SerializableState h l)) -> cleanState debug h l fileTries
-    (Left err) -> cleanState debug [] Map.empty fileTries
+    (Right (SerializableState h l)) -> do
+      if verbose 
+        then putStrLn "Success!"
+        else return ()
+      cleanState debug verbose h l fileTries
+    (Left err) -> do
+      if verbose 
+        then putStrLn "Failed! Creating blank state"
+        else return ()
+      cleanState debug verbose [] Map.empty fileTries
   return complete

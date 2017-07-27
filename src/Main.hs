@@ -19,8 +19,9 @@ import Options.Applicative hiding (empty)
 import qualified Data.Map.Lazy as Map
 
 data FishyOptions = FishyOptions
-  { clearHistory :: Bool
-  , getDebugOption :: Bool }
+  { getClearHistoryOption :: Bool
+  , getDebugOption :: Bool
+  , getVerboseOption :: Bool } 
 
 parseOptions :: Parser FishyOptions
 parseOptions = FishyOptions
@@ -32,6 +33,10 @@ parseOptions = FishyOptions
      ( long "debug"
     <> short 'd'
     <> help "Set debug mode" )
+  <*> switch
+     ( long "verbose"
+    <> short 'v'
+    <> help "Set verbose mode" )
 
 opts :: ParserInfo FishyOptions
 opts = info (parseOptions <**> helper)
@@ -44,6 +49,7 @@ main = do
   -- Fetch argvs
   options <- execParser opts
   let debug = getDebugOption options
+      verbose = getVerboseOption options
 
   -- Create state path if it's missing
   createDirectoryIfMissing True <$> statePath
@@ -55,9 +61,9 @@ main = do
   fileTries <- join $ buildFileTries <$> getCurrentDirectory
 
   -- Load state from file unless clearHistory is set
-  state <- if clearHistory options 
-    then cleanState debug [] Map.empty fileTries
-    else loadState debug fileTries
+  state <- if getClearHistoryOption options 
+    then cleanState debug verbose [] Map.empty fileTries
+    else loadState debug verbose fileTries
 
   -- Enter main loop
   fishyLoop state
