@@ -6,22 +6,23 @@ module TrieState where
 import Trie
 import FileTries
 
-import Prelude hiding (readFile, writeFile)
+import Prelude
 
 import GHC.Generics
 import Data.Serialize
-import Data.ByteString (readFile, writeFile)
 import Data.Either
 import Data.Maybe (listToMaybe, catMaybes)
 import Data.List.Zipper
 import System.Directory
 import System.Environment
+import System.IO
 import Data.List.Split
 import Control.Monad
 import Control.Monad.Trans.Class
 import Text.Regex.Posix ((=~))
 import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Lazy as Map
+import qualified Data.ByteString as BS
 
 data FishyState = FishyState 
   { getHistoryTries          :: [Trie CharWeight]
@@ -95,7 +96,7 @@ saveState s = do
   let verbose = getVerbose s
       writePath = filepath ++ stateFilename
       sstate = SerializableState (getHistoryTries s) (getLocalizedHistoryTries s)
-  writeFile (filepath ++ stateFilename) $ encode sstate
+  BS.writeFile (filepath ++ stateFilename) $ encode sstate
 
 -- Load state by deserializing history tries
 loadState :: Bool -> Bool -> [Trie CharWeight] -> IO FishyState
@@ -105,9 +106,21 @@ loadState debug verbose fileTries = do
   if verbose 
     then putStr $ "Reading state from: \"" ++ readPath ++ "\"..."
     else return ()
-  d <- readFile $ readPath
+  exists <- doesFileExist readPath
+  if exists then return ()
+  else do 
+    if verbose 
+      then putStr "\nCreating file..."
+      else return ()
+    createDirectoryIfMissing True filepath
+    handle <- openFile readPath ReadWriteMode
+    hClose handle
+    if verbose 
+      then putStrLn "Done"
+      else return ()
+  d <- BS.readFile $ readPath
   let d' = decode d
-  complete <- case d' of
+  case d' of
     (Right (SerializableState h l)) -> do
       if verbose 
         then putStrLn "Success!"
@@ -118,4 +131,3 @@ loadState debug verbose fileTries = do
         then putStrLn "Failed! Creating blank state"
         else return ()
       cleanState debug verbose [] Map.empty fileTries
-  return complete
