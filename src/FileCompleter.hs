@@ -1,7 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module FileCompleter where
 
@@ -58,7 +56,8 @@ backslashToForward = fmap (\c -> case c of
   '\\' -> '/'
   x -> x)
 
-instance Completer Char FileCompleter where
+instance Completer FileCompleter where
+  type CompleteType FileCompleter = Char
   complete (FileCompleter _ fs) prefix = fromMaybe "" $ listToMaybe $ candidates
     where candidates = filter (startsWith prefix) fs
 

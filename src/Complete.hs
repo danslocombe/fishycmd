@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Complete where
@@ -18,10 +17,11 @@ import Data.List (maximumBy)
 import Data.Maybe
 import qualified Data.Map.Lazy as Map
 
-instance Completer Char [Trie CharWeight] where
+instance Completer [Trie CharWeight] where
+  type CompleteType [Trie CharWeight] = Char
   complete = fromTries
 
-data StringCompleter = forall a. Completer Char a => StringCompleter a
+data StringCompleter = forall c. (Completer c, CompleteType c ~ Char) => StringCompleter c
 
 fromTries :: [Trie CharWeight] -> String -> String
 fromTries ts s = fmap fromCharWeight $ lookupCW s ts
