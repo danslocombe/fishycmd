@@ -13,22 +13,22 @@ import Text.Regex.Posix ((=~))
 import Safe
 import System.Directory
 
-data FileCompleter = FileCompleter [String] deriving (Show)
+data FileCompleter = FileCompleter String [String] deriving (Show)
 
-createFileCompleter :: String -> String -> IO FileCompleter
-createFileCompleter prevDir prefix = do
+createFileCompleter :: FileCompleter -> String -> IO FileCompleter
+createFileCompleter prev prefix = do
   let ps = splitOn " " prefix
-      input = if length ps > 1 then last ps else prefix
-      inputSplit = concatMap (splitOn "\\") $ splitOn "/" input
-      n = length inputSplit
-      secondLast = last $ take (n - 1) inputSplit
-      input' = if n > 1 
-        then concatMap (++"\\") $ take (n - 1) inputSplit 
-        else if input =~ ".+(/|\\)$" then input else ""
-  fileCompleterFromRelDir prevDir input'
+      targetDir = if length ps > 1 then last ps else prefix
+      tdSplit = concatMap (splitOn "\\") $ splitOn "/" targetDir
+      n = length tdSplit
+      -- secondLast = last $ take (n - 1) tdSplit
+      targetDir' = if n > 1 
+        then concatMap (++"\\") $ take (n - 1) tdSplit 
+        else if targetDir /= "" && targetDir =~ ".+(/|\\\\)$" then targetDir else ""
+  fileCompleterFromRelDir prev targetDir'
 
-fileCompleterFromRelDir :: String -> String -> IO FileCompleter
-fileCompleterFromRelDir prevDir prefix = do
+fileCompleterFromRelDir :: FileCompleter -> String -> IO FileCompleter
+fileCompleterFromRelDir prev@(FileCompleter cachedDir _) prefix = do
   exists <- doesPathExist prefix
   dir <- if exists
            then return prefix
@@ -39,22 +39,27 @@ fileCompleterFromRelDir prevDir prefix = do
              else return cd
   -- files <- listDirectory dir
   -- mapM putStrLn files
-  fileCompleterFromDir dir
+  if cachedDir == dir
+  -- Don't update, use prev
+  then return prev
+  -- Rebuild from dir
+  else fileCompleterFromDir dir
   
 fileCompleterFromDir :: String -> IO FileCompleter
 fileCompleterFromDir dir = do
+  -- putStrLn $ "Creating completer for " ++ dir
   files <- listDirectory dir
   -- Hacky
   let withCd  = (dir++) <$> files
       withCd' = backslashToForward <$> withCd
-  return $ FileCompleter (files ++ withCd ++ withCd')
+  return $ FileCompleter dir (files ++ withCd ++ withCd')
 
 backslashToForward = fmap (\c -> case c of
   '\\' -> '/'
   x -> x)
 
 instance Completer Char FileCompleter where
-  complete (FileCompleter fs) prefix = fromMaybe "" $ listToMaybe $ candidates
+  complete (FileCompleter _ fs) prefix = fromMaybe "" $ listToMaybe $ candidates
     where candidates = filter (startsWith prefix) fs
 
 startsWith :: String -> String -> Bool

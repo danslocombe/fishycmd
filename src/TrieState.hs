@@ -58,7 +58,7 @@ cleanState :: Bool -> Bool -> [Trie CharWeight] -> Map.Map FilePath [Trie CharWe
 cleanState debug verbose history localized = do
   FishyState history localized
     <$> genPathTries 
-    <*> createFileCompleter "" "" 
+    <*> createFileCompleter (FileCompleter "" []) "" 
     <*> return empty 
     <*> return False 
     <*> getCurrentDirectory 

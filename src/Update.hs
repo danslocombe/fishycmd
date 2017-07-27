@@ -36,13 +36,12 @@ foreign import ccall unsafe "conio.h getch"
 rebuildFileCompleter :: StateT FishyState IO ()
 rebuildFileCompleter = do
   state <- get
-  fileCompleter <- lift $ createFileCompleter "" (toList $ getPrompt state)
+  let oldFileCompleter = getFileCompleter state
+  fileCompleter <- lift $ createFileCompleter oldFileCompleter (toList $ getPrompt state)
   put $ state {getFileCompleter  = fileCompleter}
 
 updateIOState :: StateT FishyState IO Bool
 updateIOState = do
-  -- TODO THIS IS REALLY SLOW
-  -- don't do every update
   rebuildFileCompleter
   -- Scrape info from state
   state <- get
