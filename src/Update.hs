@@ -3,7 +3,7 @@
 module Update where
 
 import Draw
-import FileTries
+import StringTries
 import Trie
 import TrieState
 import Complete
@@ -159,9 +159,9 @@ matchChar state currentDir c = case ord c of
   13  -> Run                          -- Newline (Windows)
   8   -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows)
   127 -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows Ctr+backspace)
-  6   -> Text $ Zip (reverse (complete state currentDir)) []
+  6   -> Text $ Zip (reverse (fishyComplete state currentDir)) []
                                       -- Complete (Windows Ctr+F form feed)
-  9   -> Text $ Zip (reverse (partialComplete state currentDir)) []
+  9   -> Text $ Zip (reverse (fishyPartialComplete state currentDir)) []
                                       -- Partial complete (Tab)
   12  -> Execute "cls"                -- Clear screen (Ctr+L)
   3   -> Exit                         -- Exit (Windows Ctr+C)

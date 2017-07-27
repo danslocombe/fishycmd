@@ -1,7 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module FileTries where
+module StringTries where
 
 import Trie
 

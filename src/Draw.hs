@@ -1,6 +1,6 @@
 module Draw where
 
-import FileTries
+import StringTries
 import Trie
 import TrieState
 import Complete
@@ -39,7 +39,7 @@ drawCompletion state = do
 
   -- Set color and draw completion
   setSGR [SetColor Foreground Vivid Red]
-  putStr $ drop (length s) (complete state currentDir)
+  putStr $ drop (length s) (fishyComplete state currentDir)
   setSGR [Reset]
 
   -- Set cursor location to the position from the prompt zipper

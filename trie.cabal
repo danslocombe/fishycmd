@@ -33,8 +33,9 @@ executable trie
                      , regex-posix >= 0.95.2
                      -- , regex-tdfa >= 1.2.2
   other-modules:       Draw
-                     , FileTries
+                     , StringTries
                      , Trie
                      , TrieState
                      , Update
                      , Complete
+                     , Completer

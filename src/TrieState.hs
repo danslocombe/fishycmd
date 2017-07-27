@@ -4,7 +4,7 @@
 module TrieState where
 
 import Trie
-import FileTries
+import StringTries
 
 import Prelude
 

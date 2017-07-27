@@ -1,7 +1,7 @@
 module Main where
 
 import Draw
-import FileTries
+import StringTries
 import Trie
 import TrieState
 import Update
