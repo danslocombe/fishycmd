@@ -16,6 +16,7 @@ import System.Directory
 import System.Environment
 import System.IO
 import Options.Applicative hiding (empty)
+import qualified Data.Map.Lazy as Map
 
 data FishyOptions = FishyOptions
   { clearHistory :: Bool
@@ -55,7 +56,7 @@ main = do
 
   -- Load state from file unless clearHistory is set
   state <- if clearHistory options 
-    then cleanState debug [] fileTries
+    then cleanState debug [] Map.empty fileTries
     else loadState debug fileTries
 
   -- Enter main loop

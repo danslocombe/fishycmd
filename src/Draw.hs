@@ -23,6 +23,7 @@ drawCompletion state = do
       s = toList p
       p@(Zip pl pr) = getPrompt state
       ts = getFileTries state
+  currentDir <- getCurrentDirectory
 
   -- Fetch prePrompt
   prePromptS <- prePrompt
@@ -38,7 +39,7 @@ drawCompletion state = do
 
   -- Set color and draw completion
   setSGR [SetColor Foreground Vivid Red]
-  putStr $ drop (length s) (complete state)
+  putStr $ drop (length s) (complete state currentDir)
   setSGR [Reset]
 
   -- Set cursor location to the position from the prompt zipper

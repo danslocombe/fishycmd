@@ -4,16 +4,19 @@ import FileTries
 import Trie
 import TrieState
 
+import Data.Function (on)
 import Data.List.Zipper
-import Data.Maybe
 import Data.List.Split
+import Data.List (maximumBy)
+import Data.Maybe
+import qualified Data.Map.Lazy as Map
 
 fromTries :: [Trie CharWeight] -> String -> String
 fromTries ts s = fmap fromCharWeight $ lookupCW s ts
 
 -- Complete a prefix
-complete :: FishyState -> String
-complete state = case length splitS of
+complete :: FishyState -> String -> String
+complete state currentDir = case length splitS of
   -- Don't do anything for empty string
   0 -> ""
 
@@ -33,14 +36,14 @@ complete state = case length splitS of
     s :: String
     s = toList $ getPrompt state
     defOr s f = if s == "" then "" else f
-    completeAll = fromTries (bigTrie state) s
+    completeAll = rankTries (bigTrie state currentDir) s
 
 -- Used for tab
-partialComplete :: FishyState -> String
-partialComplete state = p ++ fromMaybe "" (listToMaybe split)
+partialComplete :: FishyState -> String -> String
+partialComplete state currentDir = p ++ fromMaybe "" (listToMaybe split)
   where 
     p = toList $ getPrompt state
-    c = complete state
+    c = complete state currentDir
     c' = drop (length p) c
     split = concatMap (splitOnAdd "\\") $ splitOnAdd "/" c'
 
@@ -51,6 +54,12 @@ splitOnAdd split s = case splitOn split s of
   xs  -> take (n-1) (map (++split) xs) ++ [last xs]
     where n = length xs
 
-bigTrie :: FishyState -> [Trie CharWeight]
-bigTrie state = getFileTries state ++ getHistoryTries state ++ getPathTries state
+rankTries :: [[Trie CharWeight]] -> String -> String
+rankTries ts p = fromMaybe p $ listToMaybe candidates
+  where candidates = filter (\x -> length x > length p)$ map ((flip fromTries) p) ts
 
+bigTrie :: FishyState -> String -> [[Trie CharWeight]]
+bigTrie state currentDir = [getFileTries state 
+  , Map.findWithDefault [] currentDir (getLocalizedHistoryTries state)
+  , getHistoryTries state
+  , getPathTries state]

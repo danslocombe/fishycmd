@@ -18,6 +18,7 @@ import Foreign.C.Types
 import System.Cmd
 import GHC.IO.Exception
 import System.Directory
+import qualified Data.Map.Lazy as Map
 
 data CommandInput = Text (Zipper Char)
                   | Run
@@ -38,6 +39,7 @@ updateIOState = do
   let p = getPrompt state
       historyLogs = getHistoryLogs state
       s = toList p
+  currentDir <- lift $ getCurrentDirectory
 
   -- Draw completion then yield for next char
   lift $ drawCompletion state
@@ -46,7 +48,7 @@ updateIOState = do
   -- This shows the ascii character of the input
   ifDebug (putStrLn $ show $ ord c)
 
-  case matchChar state c of 
+  case matchChar state currentDir c of 
     -- Update using new prompt state
     Text prompt -> do
       lift $ setCursorColumn 0
@@ -59,15 +61,18 @@ updateIOState = do
 
     -- Run what is entered by user
     Run -> do
-      lift $ putStr "\n"
+      dirToInsert <- lift $ getCurrentDirectory
       exitcode <- execCommand s
-      lift $ putStr "\n"
       state' <- get
       let historyTries = insertCW s $ getHistoryTries state'
-      let state'' = state' { getHistoryTries = historyTries
+          localizedTries = getLocalizedHistoryTries state'
+          localizedTrie = Map.findWithDefault [] dirToInsert localizedTries
+          localizedTrie' = insertCW s $ localizedTrie
+          localizedTries' = Map.insert dirToInsert localizedTrie' localizedTries
+      put $ state' { getHistoryTries = historyTries
+        , getLocalizedHistoryTries = localizedTries'
         , getPrompt = empty
         , getHistoryLogs = push s historyLogs }
-      put state''
       lift $ saveState state
       return False
 
@@ -133,28 +138,30 @@ fishyCD arg = do
   else lift $ putStrLn "Error: fishy directory"
 
 execCommand :: String -> StateT FishyState IO ()
+execCommand "" = lift $ putStr "\n"
 execCommand c = case splitOn " " c of 
   -- Extract first 'word'
   (x:xs) -> do
+    lift $ putStr "\n"
     -- Try and match against a special command, otherwise act normal
     let special = lookup x specialCommandMap
     case special of
       Just specialCmd -> runSpecial xs specialCmd
       Nothing -> lift $ system c >> return ()
-    lift $ return ()
+    lift $ putStr "\n"
   -- Blank input
   _ -> lift $ return ()
 
 -- Hardcoded windows inputs
-matchChar :: FishyState -> Char -> CommandInput
-matchChar state c = case ord c of
+matchChar :: FishyState -> String -> Char -> CommandInput
+matchChar state currentDir c = case ord c of
   10  -> Run                          -- Newline
   13  -> Run                          -- Newline (Windows)
   8   -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows)
   127 -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows Ctr+backspace)
-  6   -> Text $ Zip (reverse (complete state)) []
+  6   -> Text $ Zip (reverse (complete state currentDir)) []
                                       -- Complete (Windows Ctr+F form feed)
-  9   -> Text $ Zip (reverse (partialComplete state)) []
+  9   -> Text $ Zip (reverse (partialComplete state currentDir)) []
                                       -- Partial complete (Tab)
   12  -> Execute "cls"                -- Clear screen (Ctr+L)
   3   -> Exit                         -- Exit (Windows Ctr+C)
