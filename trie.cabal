@@ -35,3 +35,4 @@ executable trie
                      , Trie
                      , TrieState
                      , Update
+                     , Complete
