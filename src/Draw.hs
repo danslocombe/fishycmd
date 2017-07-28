@@ -37,8 +37,9 @@ drawCompletion state = do
   clearFromCursorToLineEnd
 
   -- Set color and draw completion
-  setSGR [SetColor Foreground Vivid Red]
-  putStr $ drop (length s) (fishyComplete state currentDir)
+  let (completion, color) = fishyComplete state currentDir
+  setSGR [SetColor Foreground Vivid color]
+  putStr $ drop (length s) completion
   setSGR [Reset]
 
   -- Set cursor location to the position from the prompt zipper

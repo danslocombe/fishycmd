@@ -8,6 +8,7 @@ import Completer
 import Data.Maybe (listToMaybe, fromMaybe)
 import Data.List.Split (splitOn)
 import Text.Regex.Posix ((=~))
+import System.Console.ANSI (Color(Red))
 import Safe
 import System.Directory
 
@@ -58,7 +59,7 @@ backslashToForward = fmap (\c -> case c of
 
 instance Completer FileCompleter where
   type CompleteType FileCompleter = Char
-  complete (FileCompleter _ fs) prefix = fromMaybe "" $ listToMaybe $ candidates
+  complete (FileCompleter _ fs) prefix = (fromMaybe "" $ listToMaybe $ candidates, Red)
     where candidates = filter (startsWith prefix) fs
 
 startsWith :: String -> String -> Bool

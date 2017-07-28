@@ -14,12 +14,13 @@ import Data.Function (on)
 import Data.List.Zipper
 import Data.List.Split
 import Data.List (maximumBy)
+import System.Console.ANSI (Color(Red))
 import Data.Maybe
 import qualified Data.Map.Lazy as Map
 
 instance Completer [Trie CharWeight] where
   type CompleteType [Trie CharWeight] = Char
-  complete = fromTries
+  complete ts x = (fromTries ts x, Red)
 
 data StringCompleter = forall c. (Completer c, CompleteType c ~ Char) => StringCompleter c
 
@@ -27,10 +28,10 @@ fromTries :: [Trie CharWeight] -> String -> String
 fromTries ts s = fmap fromCharWeight $ lookupCW s ts
 
 -- Complete a prefix
-fishyComplete :: FishyState -> String -> String
+fishyComplete :: FishyState -> String -> (String, Color)
 fishyComplete state currentDir = case length splitS of
   -- Don't do anything for empty string
-  0 -> ""
+  0 -> ("", Red)
 
   -- For a single 'word' use all tries
   1 -> defOr s $ completeAll
@@ -41,13 +42,14 @@ fishyComplete state currentDir = case length splitS of
     then completeAll
     -- Otherwise use files in current directory
     else let x = last splitS in 
-      defOr x $ s ++ drop (length x) (complete (getFileCompleter state) x)
+         let (compl, color) = complete (getFileCompleter state) x in
+         defOr x $ (s ++ drop (length x) compl, color)
   where 
     splitS :: [String]
     splitS = splitOn " " s
     s :: String
     s = toList $ getPrompt state
-    defOr s f = if s == "" then "" else f
+    defOr s f = if s == "" then ("", Red) else f
     completeAll = rankTries (allCompleters state currentDir) s
 
 -- Used for tab
@@ -55,7 +57,7 @@ fishyPartialComplete :: FishyState -> String -> String
 fishyPartialComplete state currentDir = p ++ fromMaybe "" (listToMaybe split)
   where 
     p = toList $ getPrompt state
-    c = fishyComplete state currentDir
+    (c, _) = fishyComplete state currentDir
     c' = drop (length p) c
     split = concatMap (splitOnAddStart " ") $ concatMap (splitOnAdd "\\") $ splitOnAdd "/" c'
 
@@ -72,9 +74,9 @@ splitOnAddStart split s = case splitOn split s of
   [x] -> [x]
   (x:xs)  -> x : map (split++) xs
 
-rankTries :: [StringCompleter] -> String -> String
-rankTries cs p = fromMaybe p $ listToMaybe candidates
-  where candidates = filter (\x -> length x > length p) 
+rankTries :: [StringCompleter] -> String -> (String, Color)
+rankTries cs p = fromMaybe (p, Red) $ listToMaybe candidates
+  where candidates = filter (\(x,_) -> length x > length p) 
                    $ map (\(StringCompleter x) -> complete x p) cs
 
 allCompleters :: FishyState -> String -> [StringCompleter]
