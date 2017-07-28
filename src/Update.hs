@@ -14,10 +14,11 @@ import Control.Monad.Trans.Class
 import Data.Char (chr, ord)
 import Data.List.Split
 import Data.List.Zipper
-import System.Console.ANSI
 import Foreign.C.Types
-import System.Cmd
 import GHC.IO.Exception
+import System.Cmd
+import System.Console.ANSI
+import System.Console.Terminal.Size
 import System.Directory
 import qualified Data.Map.Lazy as Map
 
@@ -40,19 +41,32 @@ rebuildFileCompleter = do
   fileCompleter <- lift $ createFileCompleter oldFileCompleter (toList $ getPrompt state)
   put $ state {getFileCompleter  = fileCompleter}
 
+draw :: StateT FishyState IO ()
+draw = do
+  state <- get
+  Just (Window _ ww) <- lift size
+  preprompt <- lift prePrompt
+  cd <- lift getCurrentDirectory
+  let (completion, color) = fishyComplete state cd
+  let prompt = getPrompt state
+  lift $ drawCompletion (lastPromptHeight state) preprompt prompt completion color
+  let lenTotal = length preprompt + max (length (toList prompt)) (length completion)
+  put $ state {lastPromptHeight = 1 + (lenTotal `div` ww)}
+
 updateIOState :: StateT FishyState IO Bool
 updateIOState = do
   rebuildFileCompleter
+
+  -- Draw completion then yield for next char
+  draw
+  c <- lift getHiddenChar
+
   -- Scrape info from state
   state <- get
   let p = getPrompt state
       historyLogs = getHistoryLogs state
       s = toList p
   currentDir <- lift $ getCurrentDirectory
-
-  -- Draw completion then yield for next char
-  lift $ drawCompletion state
-  c <- lift getHiddenChar
 
   -- This shows the ascii character of the input
   ifDebug (putStrLn $ show $ ord c)

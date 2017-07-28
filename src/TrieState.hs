@@ -31,6 +31,7 @@ data FishyState = FishyState
   , getPathTries             :: [Trie CharWeight]
   , getFileCompleter         :: FileCompleter
   , getPrompt                :: Zipper Char
+  , lastPromptHeight         :: Int
   , getControlPrepped        :: Bool
   , getCurrentDir            :: FilePath
   , getDebug                 :: Bool
@@ -60,6 +61,7 @@ cleanState debug verbose history localized = do
     <$> genPathTries 
     <*> createFileCompleter (FileCompleter "" []) "" 
     <*> return empty 
+    <*> return 0 
     <*> return False 
     <*> getCurrentDirectory 
     <*> return debug

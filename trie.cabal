@@ -31,6 +31,7 @@ executable trie
                      , safe >= 0.3.14
                      , containers == 0.5.7.1
                      , regex-posix >= 0.95.2
+                     , terminal-size >= 0.3.2.1
   other-modules:       Draw
                      , StringTries
                      , Trie
