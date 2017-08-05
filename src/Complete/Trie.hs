@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module Trie where
+module Complete.Trie where
 
 import GHC.Generics
 import Data.Serialize
+import Data.List (sort)
 
 data Trie a = TrieNode a [Trie a] deriving (Generic, Show, Eq, Ord)
 
@@ -27,6 +28,24 @@ insertTrie comp update new (x:xs) ts = ret
             else t
         -- This is bad, replace with monad?
         ret = if ts' == ts then ts ++ [TrieNode (new x) (partialInsert xs [])] else ts'
+
+allLists :: Ord b => [Trie b] -> [[b]]
+allLists ts = concatMap f ts
+  where 
+    f :: Ord b => Trie b -> [[b]]
+    f (TrieNode x []) = [[x]]
+    f (TrieNode x cs) = fmap (\ls -> x : ls) (allLists cs)
+
+allTrieMatches :: Ord b => Comp a b -> [a] -> [Trie b] -> [[b]]
+allTrieMatches _ [] ts = allLists ts
+allTrieMatches comp (x:xs) ts = ret
+  where
+    -- TODO factor comptrie out
+    comptrie = \(TrieNode y _) -> comp x y
+    tings = filter comptrie ts
+    ret = case tings of 
+      [] -> []
+      ((TrieNode y children):ys) -> fmap (\x -> y:x) (allTrieMatches comp xs children)
 
 lookupTrie :: Ord b => Comp a b -> [a] -> [Trie b] -> [b]
 lookupTrie _ [] ts = bestEntry ts

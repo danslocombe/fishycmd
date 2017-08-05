@@ -1,9 +1,8 @@
-module Draw where
+module Shell.Draw (prePrompt, drawCompletion) where
 
-import StringTries
-import Trie
-import TrieState
 import Complete
+import Complete.String
+import Shell.State
 
 import Control.Monad
 import Data.List.Zipper
@@ -22,8 +21,8 @@ prePrompt = do
 drawCompletion' :: Int -> [(String, Color)] -> IO ()
 drawCompletion' = undefined
 
-drawCompletion :: Int -> String -> Zipper Char -> String -> Color -> IO ()
-drawCompletion lastHeight preprompt p@(Zip pl pr) completion color = do
+drawCompletion :: Int -> String -> Zipper Char -> StringCompletion -> Color -> IO ()
+drawCompletion lastHeight preprompt p@(Zip pl pr) (Completion completion) color = do
   let s :: String
       s = toList p
   Just (Window _ ww) <- size

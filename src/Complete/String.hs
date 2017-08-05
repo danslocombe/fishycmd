@@ -1,16 +1,26 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module StringTries where
+module Complete.String
+  ( StringTrie
+  , insert
+  , lookup
+  , allMatches
+  , buildTries
+  , fromCharWeight
+  , parseFilename
+  ) where
 
-import Trie
+import Complete.Trie
 
+import Prelude hiding (lookup)
 import GHC.Generics
 import Data.Serialize
 import Safe
 import System.Directory
 import System.Environment
     
+type StringTrie = Trie CharWeight
 data CharWeight = CharWeight Char Int deriving (Generic, Show, Eq)
 
 instance Serialize CharWeight
@@ -31,7 +41,7 @@ parseFilename = stripQuotes . stripDoubleBackslash
 
 -- Build a standard trie for strings
 buildTries :: [String] -> [Trie CharWeight]
-buildTries files = foldr insertCW [] $ fmap parseFilename files
+buildTries files = foldr insert [] $ fmap parseFilename files
 
 fromCharWeight :: CharWeight -> Char
 fromCharWeight (CharWeight c _) = c
@@ -55,8 +65,11 @@ updateCW c (CharWeight _ w) = CharWeight c (w + 1)
 newCW :: Char -> CharWeight
 newCW c = (CharWeight c 1)
 
-insertCW :: String -> [Trie CharWeight] -> [Trie CharWeight]
-insertCW = insertTrie compCW updateCW newCW
+insert :: String -> [Trie CharWeight] -> [Trie CharWeight]
+insert = insertTrie compCW updateCW newCW
 
-lookupCW :: String -> [Trie CharWeight] -> [CharWeight]
-lookupCW = lookupTrie compCW
+lookup :: String -> [Trie CharWeight] -> [CharWeight]
+lookup = lookupTrie compCW
+
+allMatches :: String -> [Trie CharWeight] -> [[CharWeight]]
+allMatches = allTrieMatches compCW

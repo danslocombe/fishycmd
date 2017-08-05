@@ -1,11 +1,17 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-module TrieState where
+module Shell.State 
+    ( FishyState(..)
+    , loadState
+    , saveState
+    , ifDebug
+    , cleanState
+    , statePath
+    ) where
 
-import Trie
-import StringTries
-import FileCompleter
+import Complete.String
+import Complete.FileCompleter
 
 import Prelude
 
@@ -26,9 +32,9 @@ import qualified Data.Map.Lazy as Map
 import qualified Data.ByteString as BS
 
 data FishyState = FishyState 
-  { getHistoryTries          :: [Trie CharWeight]
-  , getLocalizedHistoryTries :: Map.Map FilePath [Trie CharWeight]
-  , getPathTries             :: [Trie CharWeight]
+  { getHistoryTries          :: [StringTrie]
+  , getLocalizedHistoryTries :: Map.Map FilePath [StringTrie]
+  , getPathTries             :: [StringTrie]
   , getFileCompleter         :: FileCompleter
   , getPrompt                :: Zipper Char
   , lastPromptHeight         :: Int
@@ -40,8 +46,8 @@ data FishyState = FishyState
   } deriving (Show)
 
 data SerializableState = SerializableState
-  { serializedHistoryTries   :: [Trie CharWeight]
-  , serializedLocalizedTries :: Map.Map FilePath [Trie CharWeight]
+  { serializedHistoryTries   :: [StringTrie]
+  , serializedLocalizedTries :: Map.Map FilePath [StringTrie]
   } deriving (Generic, Show)
 
 instance Serialize SerializableState 
@@ -55,7 +61,7 @@ ifDebug f = do
     else return ()
   
 -- Initialize a new 'clean' fishy state
-cleanState :: Bool -> Bool -> [Trie CharWeight] -> Map.Map FilePath [Trie CharWeight] -> IO FishyState
+cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
 cleanState debug verbose history localized = do
   FishyState history localized
     <$> genPathTries 
@@ -69,7 +75,7 @@ cleanState debug verbose history localized = do
     <*> return empty
 
 -- TODO do this concurrently
-genPathTries :: IO [Trie CharWeight]
+genPathTries :: IO [StringTrie]
 genPathTries = do
   path <- getEnv "PATH"
   let pathSplit = splitOn ";" path

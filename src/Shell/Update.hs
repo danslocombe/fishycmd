@@ -1,19 +1,19 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Update where
+module Shell.Update (updateIOState) where
 
 import Complete
-import Draw
-import FileCompleter
-import StringTries
-import Trie
-import TrieState
+import Complete.String
+import Complete.FileCompleter
+import Complete.Completer
+import Shell.Draw
+import Shell.State
 
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 import Data.Char (chr, ord)
 import Data.List.Split
-import Data.List.Zipper
+import Data.List.Zipper hiding (insert)
 import Foreign.C.Types
 import GHC.IO.Exception
 import System.Cmd
@@ -23,6 +23,8 @@ import System.Directory
 import qualified Data.Map.Lazy as Map
 
 data CommandInput = Text (Zipper Char)
+                  | Complete
+                  | PartialComplete
                   | Run
                   | Exit
                   | Execute String
@@ -41,24 +43,32 @@ rebuildFileCompleter = do
   fileCompleter <- lift $ createFileCompleter oldFileCompleter (toList $ getPrompt state)
   put $ state {getFileCompleter  = fileCompleter}
 
-draw :: StateT FishyState IO ()
-draw = do
+draw :: FishyState -> IO Int
+draw state = do
+  Just (Window _ ww) <- size
+  preprompt <- prePrompt
+  cd <- getCurrentDirectory
+  let rs = fishyComplete state cd
+      prompt = getPrompt state
+      (completion, color) = toDraw rs (toList prompt)
+      completionLen = length ((\(Completion c) -> c) completion)
+  -- Show all tries
+  --putStrLn $ show $ (\(FishyCompleterResult x _) -> x) <$> rs
+  drawCompletion (lastPromptHeight state) preprompt prompt completion color
+  let lenTotal = length preprompt + max (length (toList prompt)) completionLen
+  return $ 1 + (lenTotal `div` ww)
+
+drawStateWrap :: StateT FishyState IO ()
+drawStateWrap = do
   state <- get
-  Just (Window _ ww) <- lift size
-  preprompt <- lift prePrompt
-  cd <- lift getCurrentDirectory
-  let (completion, color) = fishyComplete state cd
-  let prompt = getPrompt state
-  lift $ drawCompletion (lastPromptHeight state) preprompt prompt completion color
-  let lenTotal = length preprompt + max (length (toList prompt)) (length completion)
-  put $ state {lastPromptHeight = 1 + (lenTotal `div` ww)}
+  lph <- lift $ draw state
+  put $ state {lastPromptHeight = lph}
 
 updateIOState :: StateT FishyState IO Bool
 updateIOState = do
   rebuildFileCompleter
-
   -- Draw completion then yield for next char
-  draw
+  drawStateWrap
   c <- lift getHiddenChar
 
   -- Scrape info from state
@@ -87,10 +97,10 @@ updateIOState = do
       dirToInsert <- lift $ getCurrentDirectory
       exitcode <- execCommand s
       state' <- get
-      let historyTries = insertCW s $ getHistoryTries state'
+      let historyTries = insert s $ getHistoryTries state'
           localizedTries = getLocalizedHistoryTries state'
           localizedTrie = Map.findWithDefault [] dirToInsert localizedTries
-          localizedTrie' = insertCW s $ localizedTrie
+          localizedTrie' = insert s $ localizedTrie
           localizedTries' = Map.insert dirToInsert localizedTrie' localizedTries
       put $ state' { getHistoryTries = historyTries
         , getLocalizedHistoryTries = localizedTries'
@@ -168,7 +178,7 @@ execCommand c = case splitOn " " c of
   (x:xs) -> do
     lift $ putStr "\n"
     -- Try and match against a special command, otherwise act normal
-    let special = lookup x specialCommandMap
+    let special = Prelude.lookup x specialCommandMap
     case special of
       Just specialCmd -> runSpecial xs specialCmd
       Nothing -> lift $ system c >> return ()
@@ -183,10 +193,8 @@ matchChar state currentDir c = case ord c of
   13  -> Run                          -- Newline (Windows)
   8   -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows)
   127 -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows Ctr+backspace)
-  6   -> Text $ Zip (reverse $ fst (fishyComplete state currentDir)) []
-                                      -- Complete (Windows Ctr+F form feed)
-  9   -> Text $ Zip (reverse (fishyPartialComplete state currentDir)) []
-                                      -- Partial complete (Tab)
+  6   -> Complete                     -- Complete (Windows Ctr+F form feed)
+  9   -> PartialComplete              -- Partial complete (Tab)
   12  -> Execute "cls"                -- Clear screen (Ctr+L)
   3   -> Exit                         -- Exit (Windows Ctr+C)
   4   -> Exit                         -- EOF (Windows Ctr+D)

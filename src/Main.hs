@@ -1,10 +1,13 @@
 module Main where
 
-import Draw
-import StringTries
-import Trie
-import TrieState
-import Update
+import Shell.State
+  ( FishyState
+  , cleanState
+  , loadState
+  , statePath
+  )
+import Shell.Update (updateIOState)
+  
 
 import Control.Monad
 import Control.Monad.Trans.Class
