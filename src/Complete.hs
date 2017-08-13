@@ -97,10 +97,19 @@ toDraw cs s = case length splitS of
     -- s = toList $ getPrompt state
     -- handler = getCompletionHandler state
 
-splitCompletion :: String -> [String]
-splitCompletion = concatMap (splitOnAddStart " ") .
-                  concatMap (splitOnAdd "\\") .
-                  splitOnAdd "/"
+splitCompletion :: String -> String -> String
+splitCompletion p c = p ++ compl
+                where
+                  c' = drop (length p) c
+                  n = length p
+                  compl = fromMaybe p $ listToMaybe $ split'
+                  split = concatMap (splitOnAddStart " ") .
+                          concatMap (splitOnAdd "\\") .
+                          splitOnAdd "/"
+                  split' = case split c' of
+                    ("":xs) -> xs
+                    (" ":xs) -> xs
+                    ys -> ys
 
 -- Used for tab
 -- fishyPartialComplete :: FishyState -> String -> String

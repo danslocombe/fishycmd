@@ -120,9 +120,8 @@ processChar (CompletionHandlerResult (Completion completion) _) ci = do
       defaultReturn
       
     PartialComplete -> do
-      let splitCompl = splitCompletion completion
+      let partComp = splitCompletion pstr completion
           pstr = toList $ getPrompt state
-          partComp = fromMaybe pstr $ listToMaybe splitCompl
       put $ if partComp == pstr then
         let ch' = cycleCompletionHandler $ getCompletionHandler state
         in state { getCompletionHandler = ch'
@@ -135,10 +134,6 @@ processChar (CompletionHandlerResult (Completion completion) _) ci = do
     -- Execute some other command
     Execute command -> do
       exitcode <- lift $ system command
-      state' <- get
-      -- ???????????
-      let state'' = state { getHistoryLogs = push s historyLogs }
-      put state''
       defaultReturn
 
     -- Some inputs (up, down, etc) are represented by two characters
