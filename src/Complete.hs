@@ -3,9 +3,12 @@
 {-# LANGUAGE ExistentialQuantification #-}
 
 module Complete 
-  ( fishyComplete
+  ( allCompletions
+  , splitCompletion
   , toDraw
   , StringCompletion
+  , StringCompleter      (..)
+  , StringCompleterResult
   , Completion           (..)
   , CompleterName        (..)
   , FishyCompleterResult (..)
@@ -15,6 +18,7 @@ import Complete.Completer
 import Complete.FileCompleter
 import Complete.String
 import Shell.State
+import Shell.Types
 
 import Prelude hiding (lookup)
 import Data.Function (on)
@@ -38,7 +42,7 @@ data FishyCompleterResult = FishyCompleterResult StringCompleterResult Completer
 data CompleterName = NameLocalHistoryCompleter
                    | NameFileCompleter
                    | NameGlobalHistoryCompleter
-                   | NamePathCompleter
+                   | NamePathCompleter deriving (Eq, Show)
 
 instance Completer [StringTrie] where
   type CompleteType [StringTrie] = Char
@@ -86,11 +90,12 @@ toDraw cs s = case length splitS of
     -- completeAll = undefined
 
 -- Complete a prefix
-fishyComplete :: FishyState -> String -> [FishyCompleterResult]
-fishyComplete state currentDir = allCompletions (allCompleters state currentDir) s
-  where
-    s :: String
-    s = toList $ getPrompt state
+-- fishyComplete :: FishyState -> String -> [FishyCompleterResult]
+-- fishyComplete state currentDir = allCompletions (allCompleters handler currentDir) s
+  -- where
+    -- s :: String
+    -- s = toList $ getPrompt state
+    -- handler = getCompletionHandler state
 
 splitCompletion :: String -> [String]
 splitCompletion = concatMap (splitOnAddStart " ") .
@@ -133,11 +138,3 @@ allCompletions cs p = map (filterResults . applyComplete) cs
       = FishyCompleterResult 
           (CompleterResult 
             (filter (\(Completion c) -> length c > length p) rs) c) name
-
-allCompleters :: FishyState -> String -> [StringCompleter]
-allCompleters state currentDir = 
-  [ StringCompleter local                    NameLocalHistoryCompleter
-  , StringCompleter (getFileCompleter state) NameFileCompleter
-  , StringCompleter (getHistoryTries  state) NameGlobalHistoryCompleter
-  , StringCompleter (getPathTries     state) NamePathCompleter]
-  where local = Map.findWithDefault [] currentDir $ getLocalizedHistoryTries state

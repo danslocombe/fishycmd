@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DefaultSignatures #-}
-
 module Shell.State 
     ( FishyState(..)
     , loadState
@@ -12,6 +9,7 @@ module Shell.State
 
 import Complete.String
 import Complete.FileCompleter
+import Shell.Types
 
 import Prelude
 
@@ -31,27 +29,6 @@ import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Lazy as Map
 import qualified Data.ByteString as BS
 
-data FishyState = FishyState 
-  { getHistoryTries          :: [StringTrie]
-  , getLocalizedHistoryTries :: Map.Map FilePath [StringTrie]
-  , getPathTries             :: [StringTrie]
-  , getFileCompleter         :: FileCompleter
-  , getPrompt                :: Zipper Char
-  , lastPromptHeight         :: Int
-  , getControlPrepped        :: Bool
-  , getCurrentDir            :: FilePath
-  , getDebug                 :: Bool
-  , getVerbose               :: Bool
-  , getHistoryLogs           :: Zipper String
-  } deriving (Show)
-
-data SerializableState = SerializableState
-  { serializedHistoryTries   :: [StringTrie]
-  , serializedLocalizedTries :: Map.Map FilePath [StringTrie]
-  } deriving (Generic, Show)
-
-instance Serialize SerializableState 
-
 -- Run some arbitrary IO if we are running in debug mode
 ifDebug :: IO () -> ST.StateT FishyState IO ()
 ifDebug f = do
@@ -62,13 +39,17 @@ ifDebug f = do
   
 -- Initialize a new 'clean' fishy state
 cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
-cleanState debug verbose history localized = do
-  FishyState history localized
+cleanState debug verbose global local = do
+  handler <- (CompletionHandler global local
     <$> genPathTries 
-    <*> createFileCompleter (FileCompleter "" []) "" 
+    <*> createFileCompleter (FileCompleter "" []) ""
+    <*> return 0)
+  FishyState
+    <$> return handler
     <*> return empty 
     <*> return 0 
     <*> return False 
+    <*> return []
     <*> getCurrentDirectory 
     <*> return debug
     <*> return verbose
@@ -99,13 +80,20 @@ printEnvironment = do
   env <- getEnvironment
   (mapM (\(x, y) -> putStrLn(x ++ "  " ++ y)) env) >> return ()
 
+serializableFromFishy :: FishyState -> SerializableState
+serializableFromFishy fs =
+  let ch = getCompletionHandler fs
+  in SerializableState 
+    (getHistoryTries ch) 
+    (getLocalizedHistoryTries ch)
+
 -- Save state by serializing history tries
 saveState :: FishyState -> IO ()
 saveState s = do
   filepath <- statePath
   let verbose = getVerbose s
       writePath = filepath ++ stateFilename
-      sstate = SerializableState (getHistoryTries s) (getLocalizedHistoryTries s)
+      sstate = serializableFromFishy s
   BS.writeFile (filepath ++ stateFilename) $ encode sstate
 
 -- Load state by deserializing history tries

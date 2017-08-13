@@ -2,3 +2,5 @@
 .stack-work
 test.bat
 *.swp
+builds
+*.exe
