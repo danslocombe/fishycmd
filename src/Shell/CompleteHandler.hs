@@ -6,12 +6,15 @@ module Shell.CompleteHandler
   , cycleCompletionHandler
   , revCycleCompletionHandler
   , resetCompletionHandler
+  , firstCompletionResult
+  , (!%!)
   ) where
 
 import Complete
 import Complete.FileCompleter
 import Complete.String
 import Complete.Completer
+import Complete.Types
 import Shell.Types
 
 import Control.Monad
@@ -20,7 +23,9 @@ import Data.List.Zipper hiding (insert)
 import qualified Data.Map.Lazy as Map
 import System.Console.ANSI
 
-data CompletionHandlerResult = CompletionHandlerResult (StringCompletion) Color
+
+firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
+firstCompletionResult (CompletionHandlerResult xs c) = (fromMaybe (Completion []) $ listToMaybe xs, Red)
 
 updateCompletionHandler :: CompletionHandler ->
                            Zipper Char ->
@@ -50,14 +55,14 @@ getCurrentCompletion :: CompletionHandler ->
                         String ->
                         String ->
                         [CompleterName] ->
-                        Maybe CompletionHandlerResult
+                        CompletionHandlerResult
 
 getCurrentCompletion 
   handler
   prefix
   currentDir
   queryTargets
-  = res >>= toHandlerResult
+  = toHandlerResult res
   where
     -- Convert to StringCompleters
     completers = allCompleters handler currentDir
@@ -73,15 +78,14 @@ getCurrentCompletion
       = elem name queryTargets
 
     -- Select only the completions with names we want
-    -- Then pick based on current cycle
-    res :: Maybe StringCompleterResult
-    res = (catMaybes (map filterResults rs)) !%! (getCycle handler)
+    res :: [StringCompleterResult]
+    res = (catMaybes (map filterResults rs))
 
-    toHandlerResult :: StringCompleterResult -> Maybe CompletionHandlerResult
-    toHandlerResult (CompleterResult xs color) = 
-        CompletionHandlerResult <$> headC <*> Just color
-      where
-        headC = listToMaybe xs
+    toHandlerResult :: [StringCompleterResult] -> CompletionHandlerResult
+    --toHandlerResult (CompleterResult xs color) = 
+        --CompletionHandlerResult xs color
+    toHandlerResult cs = CompletionHandlerResult all Red
+      where all = concatMap (\(CompleterResult xs _) -> xs) cs
 
 allCompleters :: CompletionHandler -> String -> [StringCompleter]
 allCompleters handler currentDir = 

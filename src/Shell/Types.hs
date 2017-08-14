@@ -2,17 +2,21 @@
 {-# LANGUAGE DefaultSignatures #-}
 
 module Shell.Types 
-  ( CompletionHandler (..)
-  , SerializableState (..)
-  , FishyState        (..)
+  ( CompletionHandler       (..)
+  , CompletionHandlerResult (..)
+  , SerializableState       (..)
+  , FishyState              (..)
   ) where
 
+
 import Complete.String
+import Complete.Types
 import Complete.FileCompleter
 
 import GHC.Generics
 import Data.Serialize
 import Data.List.Zipper
+import System.Console.ANSI
 import qualified Data.Map.Lazy as Map
 
 data CompletionHandler = CompletionHandler --CompletionHandler [FishyCompleterResult] Int
@@ -23,6 +27,10 @@ data CompletionHandler = CompletionHandler --CompletionHandler [FishyCompleterRe
   , getCycle                 :: Int
   } deriving (Show)
 
+data CompletionHandlerResult = 
+  CompletionHandlerResult [Completion Char] Color
+  deriving Show
+
 data SerializableState = SerializableState
   { serializedHistoryTries   :: [StringTrie]
   , serializedLocalizedTries :: Map.Map FilePath [StringTrie]
@@ -32,6 +40,7 @@ instance Serialize SerializableState
 
 data FishyState = FishyState 
   { getCompletionHandler     :: CompletionHandler
+  , getCachedCompletions     :: CompletionHandlerResult
   , getPrompt                :: Zipper Char
   , lastPromptHeight         :: Int -- TODO remote
   , getControlPrepped        :: Bool

@@ -9,8 +9,10 @@ import Complete.String
 import Complete
 import Shell.State
 import Shell.CompleteHandler
+import Shell.Types
 
 import Data.Maybe
+import Data.List (nub)
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 import Data.List.Split
@@ -78,15 +80,16 @@ execCommand c = case splitOn " " c of
   -- Blank input
   _ -> lift $ return ()
 
-data CommandProcessResult = CommandProcessResult [String] Bool
+data CommandProcessResult = CommandProcessResult [String] Bool Bool
 
 processChar :: CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
-processChar (CompletionHandlerResult (Completion completion) _) ci = do
+processChar handlerResult ci = do
   -- Scrape info from state
   state <- get
   let s = toList $ getPrompt state
       historyLogs = getHistoryLogs state
-      defaultReturn = return $ CommandProcessResult [] False
+      defaultReturn = return $ CommandProcessResult [] True False
+      (Completion completion, _) = firstCompletionResult handlerResult
 
   case ci of 
     -- Update using new prompt state
@@ -100,7 +103,7 @@ processChar (CompletionHandlerResult (Completion completion) _) ci = do
       defaultReturn
 
     -- Exit the shell
-    Exit -> return $ CommandProcessResult [] True
+    Exit -> return $ CommandProcessResult [] False True
 
     -- Run what is entered by user
     Run -> do
@@ -108,7 +111,7 @@ processChar (CompletionHandlerResult (Completion completion) _) ci = do
       exitcode <- execCommand s
       state' <- get
       put $ state' {getPrompt = empty}
-      lift $ return $ CommandProcessResult [s] False
+      lift $ return $ CommandProcessResult [s] True False
 
     -- Should we cycle full completions?
     Complete -> do
@@ -120,16 +123,43 @@ processChar (CompletionHandlerResult (Completion completion) _) ci = do
       defaultReturn
       
     PartialComplete -> do
-      let partComp = splitCompletion pstr completion
-          pstr = toList $ getPrompt state
-      put $ if partComp == pstr then
-        let ch' = cycleCompletionHandler $ getCompletionHandler state
-        in state { getCompletionHandler = ch'
-              , getControlPrepped = False }
-      else
-        state { getPrompt = Zip (reverse partComp) []
-              , getControlPrepped = False }
-      defaultReturn
+      let promptStr = toList $ getPrompt state
+          compNowSplit = splitCompletion promptStr completion
+          handler = getCompletionHandler state
+
+          handler' = cycleCompletionHandler handler
+          (CompletionHandlerResult comps _) = handlerResult
+          comps' = nub comps
+          i = getCycle handler
+          compNow = fromMaybe [] 
+                    ((\(Completion x) -> x) <$> (comps' !%! i))
+          i' = getCycle handler'
+          compNext = fromMaybe [] 
+                    ((\(Completion x) -> x) <$> (comps' !%! i'))
+
+      lift $ putStrLn ""
+      lift $ putStrLn $ "equalsnotprime " ++ show (compNow == promptStr)
+      lift $ putStrLn $ "equalsprime " ++ show (compNext == promptStr)
+      lift $ putStrLn $ "compNow " ++ show compNow
+      lift $ putStrLn $ "comps " ++ show comps
+      lift $ putStrLn $ "compNext' " ++ show compNext
+      lift $ putStrLn $ "comps' " ++ show comps'
+      lift $ putStrLn $ "i " ++ show i
+      lift $ putStrLn $ "i' " ++ show i'
+
+      put $ 
+        if compNow == promptStr then
+          -- Cycle to next completion
+          state { getCompletionHandler = handler'
+                , getPrompt = Zip (reverse compNext) []
+                , getControlPrepped = False }
+        else
+          -- Complete to partial
+          state { getPrompt = Zip (reverse compNowSplit) []
+                , getControlPrepped = False }
+      lift $ setCursorColumn 0
+      lift clearFromCursorToLineEnd
+      lift $ return $ CommandProcessResult [] False False
 
     -- Execute some other command
     Execute command -> do
@@ -201,3 +231,11 @@ popTopZipper (Zip xs []) = (Zip xs [], Nothing)
 popBotZipper :: Zipper a -> (Zipper a, Maybe a)
 popBotZipper (Zip (x:xs) ys) = (Zip xs ys, Just x)
 popBotZipper (Zip [] ys) = (Zip [] ys, Nothing)
+
+safeHead :: [a] -> Maybe a
+safeHead []     = Nothing
+safeHead (x:xs) = Just x
+
+safeTail :: [a] -> Maybe [a]
+safeTail []     = Nothing
+safeTail (x:xs) = Just xs

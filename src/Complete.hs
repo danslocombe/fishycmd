@@ -17,6 +17,7 @@ module Complete
 import Complete.Completer
 import Complete.FileCompleter
 import Complete.String
+import Complete.Types
 import Shell.State
 import Shell.Types
 
@@ -28,21 +29,6 @@ import Data.List (maximumBy)
 import System.Console.ANSI (Color(Red))
 import Data.Maybe
 import qualified Data.Map.Lazy as Map
-
-data StringCompleter = 
-  forall c. (Completer c, CompleteType c ~ Char) =>
-    StringCompleter c CompleterName
-
-type StringCompletion = Completion Char
-
-type StringCompleterResult = CompleterResult Char
-
-data FishyCompleterResult = FishyCompleterResult StringCompleterResult CompleterName
-
-data CompleterName = NameLocalHistoryCompleter
-                   | NameFileCompleter
-                   | NameGlobalHistoryCompleter
-                   | NamePathCompleter deriving (Eq, Show)
 
 instance Completer [StringTrie] where
   type CompleteType [StringTrie] = Char
@@ -101,8 +87,7 @@ splitCompletion :: String -> String -> String
 splitCompletion p c = p ++ compl
                 where
                   c' = drop (length p) c
-                  n = length p
-                  compl = fromMaybe p $ listToMaybe $ split'
+                  compl = fromMaybe "" $ listToMaybe $ split'
                   split = concatMap (splitOnAddStart " ") .
                           concatMap (splitOnAdd "\\") .
                           splitOnAdd "/"

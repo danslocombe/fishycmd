@@ -25,6 +25,7 @@ import Data.List.Split
 import Control.Monad
 import Control.Monad.Trans.Class
 import Text.Regex.Posix ((=~))
+import System.Console.ANSI
 import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Lazy as Map
 import qualified Data.ByteString as BS
@@ -46,6 +47,7 @@ cleanState debug verbose global local = do
     <*> return 0)
   FishyState
     <$> return handler
+    <*> return (CompletionHandlerResult [] Red)
     <*> return empty 
     <*> return 0 
     <*> return False 

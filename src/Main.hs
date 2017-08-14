@@ -6,7 +6,8 @@ import Shell.State
   , loadState
   , statePath
   )
-import Shell.Update (updateIOState)
+import Shell.Update ( updateIOState )
+import Shell.Command ( CommandProcessResult (..) )
   
 
 import Control.Monad
@@ -66,12 +67,16 @@ main = do
     else loadState debug verbose
 
   -- Enter main loop
-  fishyLoop state
+  let cpr = CommandProcessResult [] True False
+  fishyLoop cpr state
 
-fishyLoop :: FishyState -> IO ()
-fishyLoop state = do
-  (res, state') <- runStateT updateIOState state
-  if res then return () else fishyLoop state'
+fishyLoop :: CommandProcessResult -> FishyState -> IO ()
+fishyLoop cpr state = do
+  (cpr'@(CommandProcessResult _ _ exit), state')
+    <- runStateT (updateIOState cpr) state
+  if exit 
+    then return () 
+    else fishyLoop cpr' state'
 
 entryString :: String
 entryString = "\n\
