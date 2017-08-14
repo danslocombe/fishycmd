@@ -80,7 +80,11 @@ execCommand c = case splitOn " " c of
   -- Blank input
   _ -> lift $ return ()
 
-data CommandProcessResult = CommandProcessResult [String] Bool Bool
+data CommandProcessResult = CommandProcessResult 
+  { getNewCommands       :: [String]
+  , getRebuildCompleters :: Bool 
+  , getExit              :: Bool
+  } deriving Show
 
 processChar :: CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
 processChar handlerResult ci = do

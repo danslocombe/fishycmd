@@ -13,7 +13,6 @@ module Shell.CompleteHandler
 import Complete
 import Complete.FileCompleter
 import Complete.String
-import Complete.Completer
 import Complete.Types
 import Shell.Types
 

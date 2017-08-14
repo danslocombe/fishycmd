@@ -66,17 +66,21 @@ main = do
     then cleanState debug verbose [] Map.empty
     else loadState debug verbose
 
-  -- Enter main loop
+  -- No new commands
+  -- Rebuild completers
+  -- Don't exit
   let cpr = CommandProcessResult [] True False
+
+  -- Enter main loop
   fishyLoop cpr state
 
 fishyLoop :: CommandProcessResult -> FishyState -> IO ()
 fishyLoop cpr state = do
-  (cpr'@(CommandProcessResult _ _ exit), state')
+  (res, state')
     <- runStateT (updateIOState cpr) state
-  if exit 
+  if getExit res 
     then return () 
-    else fishyLoop cpr' state'
+    else fishyLoop res state'
 
 entryString :: String
 entryString = "\n\

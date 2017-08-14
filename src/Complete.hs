@@ -5,7 +5,6 @@
 module Complete 
   ( allCompletions
   , splitCompletion
-  , toDraw
   , StringCompletion
   , StringCompleter      (..)
   , StringCompleterResult
@@ -14,7 +13,6 @@ module Complete
   , FishyCompleterResult (..)
   ) where
 
-import Complete.Completer
 import Complete.FileCompleter
 import Complete.String
 import Complete.Types
@@ -32,56 +30,10 @@ import qualified Data.Map.Lazy as Map
 
 instance Completer [StringTrie] where
   type CompleteType [StringTrie] = Char
-  -- complete ts x = (fromTries ts x, Red)
   complete ts p = CompleterResult ss Red
     where
         ss :: [StringCompletion]
         ss = (Completion . fmap fromCharWeight) <$> allMatches p ts 
-
-fromTries :: [StringTrie] -> String -> String
-fromTries ts s = fmap fromCharWeight $ lookup s ts
-
---toDraw :: FishyState -> String -> [(String, Color)]
---toDraw state currentDir = case length splitS of
-toDraw :: [FishyCompleterResult] -> String -> (StringCompletion, Color)
-toDraw cs s = case length splitS of
-  -- Don't do anything for empty string
-  -- 0 -> (Completion "", Red)
-
-  -- For a single 'word' use all tries
-  _ -> defOr s $ case  (\(FishyCompleterResult x _) -> x) <$> firstFCR cs of
-    Just res -> firstResult res
-    Nothing -> (Completion "", Red)
--- 
-  -- -- For multiple 'words'
-  -- _ -> [if length completeAll > length s
-    -- -- Prefer history, otherwise complete on filenames
-    -- then completeAll
-    -- -- Otherwise use files in current directory
-    -- else let x = last splitS in 
-         -- let (CompleterResult compls color) = complete (getFileCompleter state) x in
-         -- let (Completion compl) = head compls in
-         -- defOr x $ (s ++ drop (length x) compl, color)]
-  -- where 
-  where
-    firstFCR :: [FishyCompleterResult] -> Maybe FishyCompleterResult
-    firstFCR fcrs = listToMaybe $ filter 
-      (\(FishyCompleterResult (CompleterResult ccs _) _) -> length ccs > 0) fcrs
-    firstResult :: StringCompleterResult -> (StringCompletion, Color)
-    firstResult (CompleterResult cs color) = (fromMaybe (Completion "") $ listToMaybe cs, color)
-    splitS :: [String]
-    splitS = splitOn " " s
-    defOr s f = if s == "" then (Completion "", Red) else f
-    -- -- completeAll = rankTries (allCompleters state currentDir) s
-    -- completeAll = undefined
-
--- Complete a prefix
--- fishyComplete :: FishyState -> String -> [FishyCompleterResult]
--- fishyComplete state currentDir = allCompletions (allCompleters handler currentDir) s
-  -- where
-    -- s :: String
-    -- s = toList $ getPrompt state
-    -- handler = getCompletionHandler state
 
 splitCompletion :: String -> String -> String
 splitCompletion p c = p ++ compl
@@ -96,15 +48,6 @@ splitCompletion p c = p ++ compl
                     (" ":xs) -> xs
                     ys -> ys
 
--- Used for tab
--- fishyPartialComplete :: FishyState -> String -> String
--- fishyPartialComplete state currentDir = p ++ fromMaybe "" (listToMaybe split)
-  -- where 
-    -- p = toList $ getPrompt state
-    -- (c, _) = fishyComplete state currentDir
-    -- c' = drop (length p) c
-    -- split = concatMap (splitOnAddStart " ") $ concatMap (splitOnAdd "\\") $ splitOnAdd "/" c'
-
 splitOnAdd :: String -> String -> [String]
 splitOnAdd split s = case splitOn split s of
   []  -> []
@@ -118,11 +61,6 @@ splitOnAddStart split s = case splitOn split s of
   [x] -> [x]
   (x:xs)  -> x : map (split++) xs
 
--- rankTries :: [StringCompleter] -> String -> (String, Color)
--- rankTries cs p = fromMaybe (p, Red) $ listToMaybe candidates
-  -- where candidates = filter (\(x,_) -> length x > length p) 
-                   -- $ map (\(StringCompleter x) -> complete x p) cs
-                   --
 -- TODO : Use lenses
 allCompletions :: [StringCompleter] -> String -> [FishyCompleterResult]
 allCompletions cs p = map (filterResults . applyComplete) cs

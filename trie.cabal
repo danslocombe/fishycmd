@@ -36,7 +36,6 @@ executable trie
                      , terminal-size >= 0.3.2.1
                      , QuickCheck >= 2.9.2
   other-modules:       Complete
-                     , Complete.Completer
                      , Complete.FileCompleter
                      , Complete.String
                      , Complete.Trie

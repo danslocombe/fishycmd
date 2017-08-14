@@ -3,7 +3,6 @@
 
 module Complete.FileCompleter where
 
-import Complete.Completer
 import Complete.Types
 
 import Data.Maybe (listToMaybe, fromMaybe)
