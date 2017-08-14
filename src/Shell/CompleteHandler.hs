@@ -20,6 +20,7 @@ import Shell.Types
 import Control.Monad
 import Data.Maybe
 import Data.List.Zipper hiding (insert)
+import Data.List.Split
 import qualified Data.Map.Lazy as Map
 import System.Console.ANSI
 
@@ -51,13 +52,50 @@ updateCompletionHandler old prompt dir newCommands = do
     localTrie' = addToTrie localTrie
     local = Map.insert dir localTrie' localTries
 
-getCurrentCompletion :: CompletionHandler ->
+getCurrentCompletion :: CompletionHandler -> String -> String -> CompletionHandlerResult
+getCurrentCompletion handler prefix currentDir = case length splitS of
+  -- Don't do anything for empty string
+  0 -> singletonResult
+  -- For a single 'word' use all tries
+  1 -> getCurrentCompletionInner handler prefix currentDir allCompleters
+  -- For multiple 'words'
+  _ -> let (CompletionHandlerResult hs _ ) 
+             = getCurrentCompletionInner handler prefix currentDir historyCompleters
+           (CompletionHandlerResult fs _ )
+             = getCurrentCompletionInner handler endPrefix currentDir fileCompleters
+           fs' = fmap (\(Completion c) -> Completion (prefix++(drop n c)))  fs
+        in CompletionHandlerResult (hs ++ fs') Red
+
+  where
+    allCompleters = 
+      [ NameLocalHistoryCompleter
+      , NameFileCompleter
+      , NameGlobalHistoryCompleter
+      , NamePathCompleter ]
+
+    historyCompleters =
+      [ NameLocalHistoryCompleter
+      , NameGlobalHistoryCompleter ]
+
+    fileCompleters =
+      [ NameFileCompleter
+      , NamePathCompleter ]
+
+    splitS :: [String]
+    splitS = splitOn " " prefix
+
+    endPrefix = last splitS
+    n = length endPrefix
+
+    singletonResult = CompletionHandlerResult [] Red
+
+getCurrentCompletionInner :: CompletionHandler ->
                         String ->
                         String ->
                         [CompleterName] ->
                         CompletionHandlerResult
 
-getCurrentCompletion 
+getCurrentCompletionInner 
   handler
   prefix
   currentDir

@@ -137,16 +137,6 @@ processChar handlerResult ci = do
           compNext = fromMaybe [] 
                     ((\(Completion x) -> x) <$> (comps' !%! i'))
 
-      lift $ putStrLn ""
-      lift $ putStrLn $ "equalsnotprime " ++ show (compNow == promptStr)
-      lift $ putStrLn $ "equalsprime " ++ show (compNext == promptStr)
-      lift $ putStrLn $ "compNow " ++ show compNow
-      lift $ putStrLn $ "comps " ++ show comps
-      lift $ putStrLn $ "compNext' " ++ show compNext
-      lift $ putStrLn $ "comps' " ++ show comps'
-      lift $ putStrLn $ "i " ++ show i
-      lift $ putStrLn $ "i' " ++ show i'
-
       put $ 
         if compNow == promptStr then
           -- Cycle to next completion

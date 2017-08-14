@@ -22,9 +22,8 @@ import System.Console.Terminal.Size
 import System.Console.ANSI
 import System.Directory
 
-draw :: Int -> (Zipper Char) -> CompletionHandlerResult -> IO Int
-draw lastHeight prompt handler = do
-  let (completion, color) = firstCompletionResult handler
+draw :: Int -> (Zipper Char) -> StringCompletion -> Color -> IO Int
+draw lastHeight prompt completion color = do
   Just (Window _ ww) <- size
   preprompt <- prePrompt
   cd <- getCurrentDirectory
@@ -43,7 +42,13 @@ drawStateWrap result = do
   state <- get
   let lastHeight = lastPromptHeight state
       prompt = getPrompt state
-  lph <- lift $ draw lastHeight prompt result
+      (completion, color) = firstCompletionResult result
+      -- Warning! Hack!
+      completion' = if (getCycle . getCompletionHandler) state > 1
+        then Completion ""
+        else completion
+
+  lph <- lift $ draw lastHeight prompt completion' color
   put $ state {lastPromptHeight = lph}
 
 updateCompletionHandlerWrap :: [String] -> StateT FishyState IO ()
@@ -66,14 +71,9 @@ getCurrentCompletionWrapper = do
       prompt = getPrompt state
       prefix = toList prompt
       -- For now all targets but limit based on current prefix
-      targets = 
-        [ NameLocalHistoryCompleter
-        , NameFileCompleter
-        , NameGlobalHistoryCompleter
-        , NamePathCompleter ]
       def = CompletionHandlerResult [Completion []] Red
   -- return $ fromMaybe def $ getCurrentCompletion handler prefix dir targets
-  return $ getCurrentCompletion handler prefix dir targets
+  return $ getCurrentCompletion handler prefix dir
   
 processCharWrap :: CompletionHandlerResult -> Char -> StateT FishyState IO CommandProcessResult
 processCharWrap completerResult c = do
@@ -94,7 +94,7 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
       lift $ return cs
     else do
       state <- get
-      lift $ putStrLn ("Getting cached" ++ (show (getCachedCompletions state)))
+      --lift $ putStrLn ("Getting cached" ++ (show (getCachedCompletions state)))
       lift $ return $ getCachedCompletions state
   -- Draw completion then yield for next char
   drawStateWrap completion
