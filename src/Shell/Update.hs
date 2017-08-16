@@ -86,20 +86,40 @@ processCharWrap completerResult c = do
   let ci = (matchChar state currentDir) c
   processChar completerResult ci
 
+addToHistory :: [String] -> StateT FishyState IO ()
+addToHistory cs = do
+  state <- get
+  let (Zip historyL historyR) = getHistoryLogs state
+  put state {getHistoryLogs = Zip (cs ++ historyL) historyR}
+
+saveStateWrap :: StateT FishyState IO ()
+saveStateWrap = do
+  state <- get
+  lift $ saveState state
+
 -- Main loop
 updateIOState :: CommandProcessResult -> StateT FishyState IO CommandProcessResult
 updateIOState (CommandProcessResult commands doUpdate _) = do
-  -- TODO use guard, move to own function
+  -- Add commands to history
+  addToHistory commands
+
+  -- TODO move to own function
   completion <- if doUpdate
     then do 
       updateCompletionHandlerWrap commands
       cs <- getCurrentCompletionWrapper
       state <- get
-      put $ state {getCachedCompletions = cs}
+      let state' = state {getCachedCompletions = cs}
+      put state'
       lift $ return cs
     else do
       state <- get
       lift $ return $ getCachedCompletions state
+
+  if length commands > 0
+    then saveStateWrap
+    else lift $ return ()
+
   -- Draw completion then yield for next char
   drawStateWrap completion
   c <- lift getHiddenChar
