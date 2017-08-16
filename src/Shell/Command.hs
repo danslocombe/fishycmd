@@ -81,7 +81,7 @@ execCommand c = case splitOn " " c of
   _ -> lift $ return ()
 
 data CommandProcessResult = CommandProcessResult 
-  { getNewCommands       :: [String]
+  { getNewCommands     :: [String]
   , getRebuildCompleters :: Bool 
   , getExit              :: Bool
   } deriving Show
@@ -91,6 +91,7 @@ processChar handlerResult ci = do
   -- Scrape info from state
   state <- get
   let s = toList $ getPrompt state
+      (Zip promptL promptR) = getPrompt state
       historyLogs = getHistoryLogs state
       defaultReturn = return $ CommandProcessResult [] True False
       (Completion completion, _) = firstCompletionResult handlerResult
@@ -127,8 +128,8 @@ processChar handlerResult ci = do
       defaultReturn
       
     PartialComplete -> do
-      let promptStr = toList $ getPrompt state
-          compNowSplit = splitCompletion promptStr completion
+      let prefix = reverse promptL
+          compNowSplit = splitCompletion prefix completion
           handler = getCompletionHandler state
 
           handler' = cycleCompletionHandler handler
@@ -142,14 +143,14 @@ processChar handlerResult ci = do
                     ((\(Completion x) -> x) <$> (comps' !%! i'))
 
       put $ 
-        if compNow == promptStr then
+        if compNow == prefix then
           -- Cycle to next completion
           state { getCompletionHandler = handler'
-                , getPrompt = Zip (reverse compNext) []
+                , getPrompt = Zip (reverse compNext) promptR
                 , getControlPrepped = False }
         else
           -- Complete to partial
-          state { getPrompt = Zip (reverse compNowSplit) []
+          state { getPrompt = Zip (reverse compNowSplit) promptR
                 , getControlPrepped = False }
       lift $ setCursorColumn 0
       lift clearFromCursorToLineEnd

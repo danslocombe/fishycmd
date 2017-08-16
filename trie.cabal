@@ -1,8 +1,7 @@
 name:                trie
 version:             0.1.0.0
 synopsis:            A fishy wrapper for cmd
---description:
-homepage:   https://github.com/danslocombe/fishycmd
+description:         A fishy wrapper for cmd
 homepage:            https://github.com/githubuser/trie#readme
 license:             BSD3
 license-file:        LICENSE
@@ -47,3 +46,4 @@ executable trie
                      , Shell.KeyPress
                      , Shell.CompleteHandler
                      , Shell.Types
+  extra-lib-dirs:      lib

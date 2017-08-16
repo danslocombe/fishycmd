@@ -9,7 +9,6 @@ import Shell.State
 import Shell.Update ( updateIOState )
 import Shell.Command ( CommandProcessResult (..) )
   
-
 import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict

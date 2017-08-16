@@ -40,10 +40,15 @@ drawStateWrap :: CompletionHandlerResult -> StateT FishyState IO ()
 drawStateWrap result = do
   state <- get
   let lastHeight = lastPromptHeight state
-      prompt = getPrompt state
+      prompt@(Zip promptL promptR) = getPrompt state
       (completion, color) = firstCompletionResult result
-      -- Warning! Hack!
-      completion' = if (getCycle . getCompletionHandler) state > 1
+      -- Warning! Hacks!
+      completion' = if 
+      -- If we are cycling through partial completions don't draw anything
+        (getCycle . getCompletionHandler) state > 1 ||
+      -- If cursor is not at end of line don't draw anything
+        length promptR > 0
+
         then Completion ""
         else completion
 
@@ -69,10 +74,9 @@ getCurrentCompletionWrapper = do
   state <- get
   dir <- lift $ getCurrentDirectory
   let handler = getCompletionHandler state
-      prompt = getPrompt state
-      prefix = toList prompt
+      prompt@(Zip promptL promptR) = getPrompt state
       def = CompletionHandlerResult [Completion []] Red
-  return $ getCurrentCompletion handler prefix dir
+  return $ getCurrentCompletion handler (reverse promptL) dir
   
 -- Wrap processing an input char with updating state
 processCharWrap :: CompletionHandlerResult -> Char -> StateT FishyState IO CommandProcessResult
