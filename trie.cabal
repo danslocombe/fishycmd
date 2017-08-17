@@ -13,7 +13,6 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-
 executable trie
   hs-source-dirs:      src
   main-is:             Main.hs
@@ -33,6 +32,7 @@ executable trie
                      , containers == 0.5.7.1
                      , regex-posix >= 0.95.2
                      , terminal-size >= 0.3.2.1
+                     -- , lens >= 4.15.1
                      , QuickCheck >= 2.9.2
   other-modules:       Complete
                      , Complete.FileCompleter

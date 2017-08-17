@@ -9,6 +9,7 @@ module Complete.String
   , buildTries
   , fromCharWeight
   , parseFilename
+  , CharWeight (..)
   ) where
 
 import Complete.Trie
