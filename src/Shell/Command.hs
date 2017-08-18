@@ -11,12 +11,13 @@ import Shell.State
 import Shell.CompleteHandler
 import Shell.Types
 
+import System.Signal
 import Data.Maybe
 import Data.List (nub)
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 import Data.List.Split
-import System.Cmd
+import System.Process
 import System.Console.ANSI
 import System.Directory
 import Data.List.Zipper hiding (insert)
@@ -31,6 +32,9 @@ data CommandInput = Text (Zipper Char)
                   | PrepControlChar
                   | HistoryBack
                   | HistoryForward
+
+killHandler :: ProcessHandle -> Handler
+killHandler phandle _ = terminateProcess phandle
 
 -- We have an idea of 'special' commands that hold side effects
 -- these are handled by the shell rather than external calls
@@ -75,7 +79,13 @@ execCommand c = case splitOn " " c of
     let special = Prelude.lookup x specialCommandMap
     case special of
       Just specialCmd -> runSpecial xs specialCmd
-      Nothing -> lift $ system c >> return ()
+      Nothing -> lift $ do 
+        phandle <- spawnCommand c
+        installHandler sigINT (killHandler phandle)
+        installHandler sigABRT (killHandler phandle)
+        installHandler sigTERM (killHandler phandle)
+        waitForProcess phandle
+        return ()
     lift $ putStr "\n"
   -- Blank input
   _ -> lift $ return ()
