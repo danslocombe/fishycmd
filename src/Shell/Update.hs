@@ -47,7 +47,9 @@ drawStateWrap result = do
       -- If we are cycling through partial completions don't draw anything
         (getCycle . getCompletionHandler) state > 1 ||
       -- If cursor is not at end of line don't draw anything
-        length promptR > 0
+        length promptR > 0 ||
+      -- If prompt is empty then dont draw anything
+        length (toList prompt) == 0
 
         then Completion ""
         else completion
