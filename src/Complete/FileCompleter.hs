@@ -47,7 +47,7 @@ fileCompleterFromRelDir prev@(FileCompleter cachedDir _) prefix = do
 fileCompleterFromDir :: String -> IO FileCompleter
 fileCompleterFromDir dir = do
   -- putStrLn $ "Creating completer for " ++ dir
-  files <- listDirectory dir
+  files <- reverse <$> listDirectory dir
   -- Hacky
   let withCd  = (dir++) <$> files
       withCd' = backslashToForward <$> withCd

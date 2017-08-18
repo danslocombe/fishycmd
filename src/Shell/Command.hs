@@ -39,11 +39,14 @@ killHandler phandle _ = terminateProcess phandle
 -- We have an idea of 'special' commands that hold side effects
 -- these are handled by the shell rather than external calls
 
-data SpecialCommand = CD
+data SpecialCommand = CD | EXIT
 
-specialCommandMap = [("cd", CD)]
+specialCommandMap = 
+  [ ("cd", CD)
+  , ("exit", EXIT)
+  ]
 
-runSpecial :: [String] -> SpecialCommand -> StateT FishyState IO ()
+runSpecial :: [String] -> SpecialCommand -> StateT FishyState IO Bool
 runSpecial args cmd = do
   ifDebug $ putStrLn "Running special command..."
   case cmd of
@@ -51,7 +54,8 @@ runSpecial args cmd = do
                        [] -> ""
                        [""] -> ""
                        xs -> foldr1 (\x y -> x ++ " " ++ y) xs)
-      in fishyCD arg
+      in fishyCD arg >> (lift $ return False)
+    EXIT -> lift $ return True
 
 fishyCD :: String -> StateT FishyState IO ()
 fishyCD "" = lift $ (putStrLn =<< getCurrentDirectory)
@@ -69,26 +73,25 @@ fishyCD arg = do
     -- put state {getFileTries = fileTries'}
   else lift $ putStrLn "Error: fishy directory"
 
-execCommand :: String -> StateT FishyState IO ()
-execCommand "" = lift $ putStr "\n"
+execCommand :: String -> StateT FishyState IO Bool
+execCommand "" = lift $ putStr "\n" >> return False
 execCommand c = case splitOn " " c of 
   -- Extract first 'word'
   (x:xs) -> do
     lift $ putStr "\n"
     -- Try and match against a special command, otherwise act normal
     let special = Prelude.lookup x specialCommandMap
-    case special of
+    ret <- case special of
       Just specialCmd -> runSpecial xs specialCmd
       Nothing -> lift $ do 
         phandle <- spawnCommand c
         installHandler sigINT (killHandler phandle)
-        installHandler sigABRT (killHandler phandle)
-        installHandler sigTERM (killHandler phandle)
         waitForProcess phandle
-        return ()
+        return False
     lift $ putStr "\n"
+    lift $ return ret
   -- Blank input
-  _ -> lift $ return ()
+  _ -> lift $ return False
 
 data CommandProcessResult = CommandProcessResult 
   { getNewCommands     :: [String]
@@ -123,10 +126,10 @@ processChar handlerResult ci = do
     -- Run what is entered by user
     Run -> do
       dirToInsert <- lift $ getCurrentDirectory
-      exitcode <- execCommand s
+      exitQuestionMark <- execCommand s
       state' <- get
       put $ state' {getPrompt = empty}
-      lift $ return $ CommandProcessResult [s] True False
+      lift $ return $ CommandProcessResult [s] True exitQuestionMark
 
     -- Should we cycle full completions?
     Complete -> do
