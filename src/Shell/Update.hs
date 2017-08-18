@@ -9,6 +9,7 @@ import Shell.Types
 import Shell.Command
 import Shell.KeyPress
 import Shell.CompleteHandler
+import Shell.Helpers
 
 import Data.Char (ord)
 import Data.Maybe
@@ -118,9 +119,8 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
       state <- get
       lift $ return $ getCachedCompletions state
 
-  if length commands > 0
-    then saveStateWrap
-    else lift $ return ()
+  length commands > 0
+    ?-> saveStateWrap
 
   -- Draw completion then yield for next char
   drawStateWrap completion

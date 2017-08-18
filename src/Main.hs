@@ -8,6 +8,7 @@ import Shell.State
   )
 import Shell.Update ( updateIOState )
 import Shell.Command ( CommandProcessResult (..) )
+import Shell.Helpers ((?->))
   
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -75,11 +76,12 @@ main = do
 
 fishyLoop :: CommandProcessResult -> FishyState -> IO ()
 fishyLoop cpr state = do
+
   (res, state')
     <- runStateT (updateIOState cpr) state
-  if getExit res 
-    then return () 
-    else fishyLoop res state'
+
+  not (getExit res)
+    ?-> fishyLoop res state'
 
 entryString :: String
 entryString = "\n\

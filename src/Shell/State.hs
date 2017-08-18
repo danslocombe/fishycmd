@@ -10,6 +10,7 @@ module Shell.State
 import Complete.String
 import Complete.FileCompleter
 import Shell.Types
+import Shell.Helpers
 import Corext.AliasCompleter
 
 import Prelude
@@ -30,14 +31,6 @@ import System.Console.ANSI
 import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Lazy as Map
 import qualified Data.ByteString as BS
-
--- Run some arbitrary IO if we are running in debug mode
-ifDebug :: IO () -> ST.StateT FishyState IO ()
-ifDebug f = do
-  state <- ST.get
-  lift $ if getDebug state
-    then f
-    else return ()
   
 -- Initialize a new 'clean' fishy state
 cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
@@ -90,7 +83,7 @@ statePath = do
 printEnvironment :: IO ()
 printEnvironment = do
   env <- getEnvironment
-  (mapM (\(x, y) -> putStrLn(x ++ "  " ++ y)) env) >> return ()
+  (mapM_ (\(x, y) -> putStrLn(x ++ "  " ++ y)) env)
 
 serializableFromFishy :: FishyState -> SerializableState
 serializableFromFishy fs =
@@ -113,31 +106,24 @@ loadState :: Bool -> Bool -> IO FishyState
 loadState debug verbose = do
   filepath <- statePath
   let readPath = filepath ++ stateFilename
-  if verbose 
-    then putStr $ "Reading state from: \"" ++ readPath ++ "\"..."
-    else return ()
-  exists <- doesFileExist readPath
-  if exists then return ()
-  else do 
-    if verbose 
-      then putStr "\nCreating file..."
-      else return ()
-    createDirectoryIfMissing True filepath
-    handle <- openFile readPath ReadWriteMode
-    hClose handle
-    if verbose 
-      then putStrLn "Done"
-      else return ()
+
+  verbose ?->
+    (putStr $ "Reading state from: \"" ++ readPath ++ "\"...")
+
+  not <$> doesFileExist readPath
+    ?~> do
+      verbose ?-> putStr "\nCreating file..."
+      createDirectoryIfMissing True filepath
+      handle <- openFile readPath ReadWriteMode
+      hClose handle
+      verbose ?-> putStrLn "Done"
+
   d <- BS.readFile $ readPath
   let d' = decode d
   case d' of
     (Right (SerializableState h l)) -> do
-      if verbose 
-        then putStrLn "Success!"
-        else return ()
+      verbose ?-> putStrLn "Success!"
       cleanState debug verbose h l
     (Left err) -> do
-      if verbose 
-        then putStrLn "Failed! Creating blank state"
-        else return ()
+      verbose ?-> putStrLn "Failed! Creating blank state"
       cleanState debug verbose [] Map.empty

@@ -47,5 +47,6 @@ executable trie
                      , Shell.KeyPress
                      , Shell.CompleteHandler
                      , Shell.Types
+                     , Shell.Helpers
                      , Corext.AliasCompleter
   extra-lib-dirs:      lib

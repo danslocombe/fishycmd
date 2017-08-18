@@ -3,12 +3,12 @@ module Shell.Draw (prePrompt, drawCompletion) where
 import Complete
 import Complete.String
 import Shell.State
+import Shell.Helpers
 
 import Control.Monad
 import Data.List.Zipper
 import System.Directory
 import System.Environment
-import System.Cmd
 import System.Console.ANSI
 import System.Console.Terminal.Size
 import System.IO
@@ -42,9 +42,8 @@ drawCompletion lastHeight preprompt p@(Zip pl pr) (Completion completion) color 
   let thisLength = length preprompt + max (length s) (length completion)
       thisHeight = 1 + (thisLength `div` ww)
 
-  if (lastHeight > thisHeight)
-    then cursorDown 1
-    else return ()
+  lastHeight > thisHeight
+    ?-> cursorDown 1
  
   -- Draw preprompt and user input
   putStr drawstr
