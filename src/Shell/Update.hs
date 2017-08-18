@@ -125,4 +125,5 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
   -- Draw completion then yield for next char
   drawStateWrap completion
   c <- lift getHiddenChar
+  lift . putStrLn . show $ ord c
   processCharWrap completion c

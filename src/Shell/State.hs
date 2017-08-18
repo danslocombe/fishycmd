@@ -10,6 +10,7 @@ module Shell.State
 import Complete.String
 import Complete.FileCompleter
 import Shell.Types
+import Corext.AliasCompleter
 
 import Prelude
 
@@ -42,7 +43,7 @@ ifDebug f = do
 cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
 cleanState debug verbose global local = do
   handler <- (CompletionHandler global local
-    <$> genPathTries 
+    <$> genPathyTries 
     <*> createFileCompleter (FileCompleter "" []) ""
     <*> return 0)
   FishyState
@@ -56,6 +57,15 @@ cleanState debug verbose global local = do
     <*> return debug
     <*> return verbose
     <*> return empty
+
+genPathyTries :: IO [StringTrie]
+genPathyTries = inCorext >>= \x -> if x
+  then genCorextTries
+  else genPathTries
+
+genCorextTries :: IO [StringTrie]
+genCorextTries = putStrLn "Using CoreXT for completions" >>     
+                 buildTries <$> parseAliases
 
 -- TODO do this concurrently
 genPathTries :: IO [StringTrie]
