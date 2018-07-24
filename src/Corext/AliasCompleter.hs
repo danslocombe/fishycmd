@@ -1,8 +1,11 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Corext.AliasCompleter where
 
 import Safe
 import Data.Maybe
 import Data.List.Split
+import Data.List (intersperse)
 import System.Environment
 
 inetroot :: IO (Maybe String)
@@ -25,5 +28,6 @@ parseAliases = do
   aliasesRaw <- splitOn "\n" <$> (readFile =<< aliasPath)
   let aliases = map (splitOn "=") aliasesRaw
       aliasKeysWhitespace = mapMaybe headMay aliases
-      aliasKeys =  mapMaybe (headMay . (splitOn " ")) aliasKeysWhitespace
+      aliasKeys :: [String] =  mapMaybe (headMay . (splitOn " ")) aliasKeysWhitespace
+  putStrLn $ "CoreXT keys : " ++ (concat $ intersperse " " aliasKeys)
   return aliasKeys

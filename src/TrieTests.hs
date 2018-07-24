@@ -105,3 +105,17 @@ prop_relevanceAssociates (NonEmpty prefix) a b c x y z =
     insertA = insertN x (prefix ++ a)
     insertB = insertN y (prefix ++ b)
     insertC = insertN z (prefix ++ c)
+
+-- If we have a prefix abc and a trie with weights (abcd, 10) (abcde, 1) then we 
+-- should give abcd not abcde
+prop_willGivePrefixes :: String -> String -> String -> Int -> Int -> Property
+prop_willGivePrefixes s0 s1 s2 w0 w1 =
+  w1 > w0 && w0 > 0 ==>
+    lookup prefix == abcd
+    where
+      prefix = s0
+      abcd = prefix ++ s1
+      abcde = abcd ++ s2
+
+      t0 = insertN w0 abcde []
+      t  = insertN w1 abcd  t0

@@ -33,7 +33,6 @@ updateCompletionHandler :: CompletionHandler ->
                            [String] ->
                            IO CompletionHandler
 
--- TODO save state
 updateCompletionHandler old prompt dir newCommands = do
   fileCompleter <- createFileCompleter (getFileCompleter old) (toList prompt)
   return old 

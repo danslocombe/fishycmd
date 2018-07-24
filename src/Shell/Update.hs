@@ -37,8 +37,8 @@ draw lastHeight prompt completion color = do
   return $ 1 + (lenTotal `div` ww)
 
 -- Wrap draw function with updating of state
-drawStateWrap :: CompletionHandlerResult -> StateT FishyState IO ()
-drawStateWrap result = do
+drawState' :: CompletionHandlerResult -> StateT FishyState IO ()
+drawState' result = do
   state <- get
   let lastHeight = lastPromptHeight state
       prompt@(Zip promptL promptR) = getPrompt state
@@ -59,8 +59,8 @@ drawStateWrap result = do
   put $ state {lastPromptHeight = lph}
 
 -- Wrap updating completion handler with updates to state
-updateCompletionHandlerWrap :: [String] -> StateT FishyState IO ()
-updateCompletionHandlerWrap newCommands = do
+updateCompletionHandler' :: [String] -> StateT FishyState IO ()
+updateCompletionHandler' newCommands = do
   state <- get
   ch <- lift $ updateCompletionHandler 
     (getCompletionHandler state) 
@@ -72,8 +72,8 @@ updateCompletionHandlerWrap newCommands = do
   put $ state' {getBufferedCommands = []}
 
 -- Package getting the current state and executing the completion handler
-getCurrentCompletionWrapper :: StateT FishyState IO CompletionHandlerResult
-getCurrentCompletionWrapper = do
+getCurrentCompletion' :: StateT FishyState IO CompletionHandlerResult
+getCurrentCompletion' = do
   state <- get
   dir <- lift $ getCurrentDirectory
   let handler = getCompletionHandler state
@@ -82,8 +82,8 @@ getCurrentCompletionWrapper = do
   return $ getCurrentCompletion handler (reverse promptL) dir
   
 -- Wrap processing an input char with updating state
-processCharWrap :: CompletionHandlerResult -> Char -> StateT FishyState IO CommandProcessResult
-processCharWrap completerResult c = do
+processChar' :: CompletionHandlerResult -> Char -> StateT FishyState IO CommandProcessResult
+processChar' completerResult c = do
   state <- get
   currentDir <- lift $ getCurrentDirectory
   let ci = (matchChar state currentDir) c
@@ -95,8 +95,8 @@ addToHistory cs = do
   let (Zip historyL historyR) = getHistoryLogs state
   put state {getHistoryLogs = Zip (cs ++ historyL) historyR}
 
-saveStateWrap :: StateT FishyState IO ()
-saveStateWrap = do
+saveState' :: StateT FishyState IO ()
+saveState' = do
   state <- get
   lift $ saveState state
 
@@ -106,12 +106,17 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
   -- Add commands to history
   addToHistory commands
 
-  -- TODO move to own function
+  -- Check if we should update the completion handlers
+  -- if we should then update and write to cache, otherwise
+  -- read from cache
+  -- return current completion
   completion <- if doUpdate
     then do 
-      updateCompletionHandlerWrap commands
-      cs <- getCurrentCompletionWrapper
+      -- feed handlers new commands
+      updateCompletionHandler' commands
+      cs <- getCurrentCompletion'
       state <- get
+      -- write to cache
       let state' = state {getCachedCompletions = cs}
       put state'
       lift $ return cs
@@ -119,11 +124,18 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
       state <- get
       lift $ return $ getCachedCompletions state
 
+  -- If we have performed some non-trivial action
+  -- save the state
   length commands > 0
-    ?-> saveStateWrap
+    ?-> saveState'
+
+  -- log the completions
+  ss <- get
+  cd <- lift $ getCurrentDirectory
+  lift $ logCompletions (toList $ getPrompt ss) cd completion
 
   -- Draw completion then yield for next char
-  drawStateWrap completion
+  drawState' completion
   c <- lift getHiddenChar
-  lift . putStrLn . show $ ord c
-  processCharWrap completion c
+  -- lift . putStrLn . show $ ord c
+  processChar' completion c

@@ -60,7 +60,6 @@ genCorextTries :: IO [StringTrie]
 genCorextTries = putStrLn "Using CoreXT for completions" >>     
                  buildTries <$> parseAliases
 
--- TODO do this concurrently
 genPathTries :: IO [StringTrie]
 genPathTries = do
   path <- getEnv "PATH"
@@ -69,6 +68,17 @@ genPathTries = do
   files <- concat <$> mapM listDirectory validPaths
   let removeExe s = take (length s - 4) s
       files' = map removeExe $ filter (\x -> x =~ "(.+)\\.exe$") files
+
+  logLine "-----------"
+  logLine "Generating path tries"
+  logLine "-----------"
+  logLine "Path Locations:"
+  logLine $ unlines validPaths
+  logLine "-----------"
+  logLine "Files:"
+  logLine $ unlines files'
+  logLine "-----------"
+
   return $ buildTries $ files'
   
 stateFilename :: String

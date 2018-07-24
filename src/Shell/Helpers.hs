@@ -1,6 +1,7 @@
 module Shell.Helpers where
 
 import Shell.Types
+import Complete.Types
 
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -29,3 +30,19 @@ infix 0 ?->
 -- Run some arbitrary IO if we are running in debug mode
 ifDebug :: IO () -> StateT FishyState IO ()
 ifDebug f = lift f <~? getDebug <$> get
+
+logpath = "C:\\Users\\daslocom\\fish.log"
+
+logLine :: String -> IO ()
+logLine s = appendFile logpath (s ++ "\n")
+
+logCompletions :: String -> String -> CompletionHandlerResult -> IO ()
+logCompletions prefix cd completions = do
+  let f :: CompletionHandlerResult -> [String]
+      f (CompletionHandlerResult cs _) = map (\(Completion x) -> x) cs
+  logLine $ prefix 
+    ++ ", "
+    ++ cd 
+    ++ " ->\n"
+    ++ (unlines (f completions))
+    ++ "\n\n"

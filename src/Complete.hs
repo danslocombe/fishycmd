@@ -11,6 +11,7 @@ module Complete
   , Completion           (..)
   , CompleterName        (..)
   , FishyCompleterResult (..)
+  , Completer
   ) where
 
 import Complete.FileCompleter
@@ -48,6 +49,7 @@ splitCompletion p c = p ++ compl
                     (" ":xs) -> xs
                     ys -> ys
 
+-- Split a string on another string and add the split string to the end
 splitOnAdd :: String -> String -> [String]
 splitOnAdd split s = case splitOn split s of
   []  -> []
@@ -55,12 +57,14 @@ splitOnAdd split s = case splitOn split s of
   xs  -> take (n-1) (map (++split) xs) ++ [last xs]
     where n = length xs
 
+-- Split a string on another string and add the split string to the beginning
 splitOnAddStart :: String -> String -> [String]
 splitOnAddStart split s = case splitOn split s of
   []  -> []
   [x] -> [x]
   (x:xs)  -> x : map (split++) xs
 
+-- Given a list of completers and a prefix produce a list of results
 -- TODO : Use lenses
 allCompletions :: [StringCompleter] -> String -> [FishyCompleterResult]
 allCompletions cs p = map (filterResults . applyComplete) cs
@@ -69,4 +73,4 @@ allCompletions cs p = map (filterResults . applyComplete) cs
     filterResults (FishyCompleterResult (CompleterResult rs c) name) 
       = FishyCompleterResult 
           (CompleterResult 
-            (filter (\(Completion c) -> length c > length p) rs) c) name
+            (filter (\(Completion c) -> length c >= length p) rs) c) name

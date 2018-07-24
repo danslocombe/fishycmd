@@ -84,7 +84,10 @@ fishyLoop cpr state = do
     ?-> fishyLoop res state'
 
 entryString :: String
-entryString = "\n\
+entryString = ""
+
+entryString2 :: String
+entryString2 = "\n\
 \ ______________       ______         ______________  __________ \n\
 \ ___  ____/__(_)_________  /______  ___  ____/__   |/  /__  __ \\\n\
 \ __  /_   __  /__  ___/_  __ \\_  / / /  /    __  /|_/ /__  / / /\n\
