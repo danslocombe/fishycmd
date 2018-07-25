@@ -73,12 +73,13 @@ insertTrie (x:xs) ts = ret
             }]
           else ts'
 
-allLists :: [Trie b] -> [[b]]
+allLists :: forall a b. (ConcreteTrie a b) => [Trie b] -> [[b]]
 allLists ts = concatMap f ts
   where 
     f :: Trie b -> [[b]]
     f (TrieNode x [] f) = [[x]]
-    f (TrieNode x cs f) = fmap (\ls -> x : ls) (allLists cs)
+    f t@(TrieNode x cs f) = (\ls -> x : ls) <$> addCurrent t ++ (allLists cs)
+    addCurrent t = if finalHeuristic t then [[]] else []
 
 allTrieMatches :: (ConcreteTrie a b, Eq b) => [a] -> [Trie b] -> [[b]]
 allTrieMatches [] ts = allLists ts
@@ -87,7 +88,11 @@ allTrieMatches (x:xs) ts = ret
     matching = filter (compTrie x) ts
     ret = case matching of 
       [] -> []
-      ((TrieNode y children f):ys) -> fmap (\x -> y:x) (allTrieMatches xs children)
+      (t@(TrieNode y children f):ys) ->
+         ((\x -> y:x) <$> addCurrent t ++ (allTrieMatches xs children))
+
+    addCurrent t = if finalHeuristic t then [[]] else []
+
 
 lookupTrie :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [b]
 lookupTrie [] ts = bestEntry ts
@@ -96,7 +101,10 @@ lookupTrie (x:xs) ts = ret
     matching = filter (compTrie x) ts
     ret = case matching of 
       [] -> []
-      ((TrieNode y children f):ys) -> y:(lookupTrie xs children)
+      (t@(TrieNode y children f):ys) -> y:(rest t)
+    rest t = if finalHeuristic t 
+      then []
+      else lookupTrie xs (getChildren t)
 
 bestEntry :: (ConcreteTrie a b, Ord b) => [Trie b] -> [b]
 bestEntry [] = []
@@ -104,5 +112,3 @@ bestEntry ts = best:rest
   where
     t@(TrieNode best children f) = maximum ts 
     rest = if finalHeuristic t then [] else bestEntry children
-
-

@@ -85,7 +85,7 @@ execCommand c = case splitOn " " c of
       Just specialCmd -> runSpecial xs specialCmd
       Nothing -> lift $ do 
         phandle <- spawnCommand c
-        installHandler sigINT (killHandler phandle)
+        installHandler sigINT (\sig -> do {putStrLn "KILLING SPAWNED PROCESS"; killHandler phandle sig})
         waitForProcess phandle
         return False
     lift $ putStr "\n"

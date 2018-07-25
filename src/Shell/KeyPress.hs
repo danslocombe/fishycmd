@@ -32,6 +32,8 @@ matchChar state currentDir c = case ord c of
   224 -> PrepControlChar              -- Prep character
   75  -> ifControlPrepped $ left p    -- Left if prepped
   77  -> ifControlPrepped $ right p   -- Right if prepped
+  14  -> HistoryForward -- Ctrl p
+  16  -> HistoryBack -- Ctrl n
   72  -> if getControlPrepped state then HistoryBack else Text (push c p)
   80  -> if getControlPrepped state then HistoryForward else Text (push c p)
   71  -> ifControlPrepped $ Zip [] (toList p) -- Home

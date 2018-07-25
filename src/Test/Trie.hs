@@ -24,6 +24,8 @@ runTests = do
   quickCheck prop_relevanceAssociates
   putStrLn "check abc abcd abcde"
   quickCheck prop_willGivePrefixes
+  putStrLn "check trie will suggest the whole prefix"
+  quickCheck prop_suggestPrefix
   return () 
 
 prop_RevRev :: Eq a => [a] -> Bool
@@ -134,3 +136,7 @@ prop_willGivePrefixes s0 (NonEmpty s1) (NonEmpty s2) w0 w1 =
 
       t0 = insertN w0 abcde []
       t  = insertN w1 abcd  t0
+
+prop_suggestPrefix :: [StringTrie] -> NonEmptyStr -> Bool
+prop_suggestPrefix st (NonEmpty p) = 
+  p == (fromCharWeight <$> (lookupTrie p $ insertTrie p []))

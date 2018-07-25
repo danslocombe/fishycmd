@@ -101,8 +101,9 @@ getCurrentCompletionInner
   queryTargets
   = toHandlerResult res
   where
-    -- Convert to StringCompleters
+    -- Get all completers for the current directory
     completers = allCompleters handler currentDir
+
     -- Get completions
     rs = allCompletions completers prefix
 
@@ -114,10 +115,11 @@ getCurrentCompletionInner
     hasDesiredName (FishyCompleterResult cr name)
       = elem name queryTargets
 
-    -- Select only the completions with names we want
+    -- Select only results from completers we care about
     res :: [StringCompleterResult]
     res = (catMaybes (map filterResults rs))
 
+    -- Add red color
     toHandlerResult :: [StringCompleterResult] -> CompletionHandlerResult
     --toHandlerResult (CompleterResult xs color) = 
         --CompletionHandlerResult xs color
@@ -126,7 +128,7 @@ getCurrentCompletionInner
 
 allCompleters :: CompletionHandler -> String -> [StringCompleter]
 allCompleters handler currentDir = 
-  [ StringCompleter local                    NameLocalHistoryCompleter
+  [ StringCompleter local                      NameLocalHistoryCompleter
   , StringCompleter (getFileCompleter handler) NameFileCompleter
   , StringCompleter (getHistoryTries  handler) NameGlobalHistoryCompleter
   , StringCompleter (getPathTries     handler) NamePathCompleter]

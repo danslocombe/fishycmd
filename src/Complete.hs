@@ -70,8 +70,17 @@ splitOnAddStart split s = case splitOn split s of
 allCompletions :: [StringCompleter] -> String -> [FishyCompleterResult]
 allCompletions cs p = map (filterResults . applyComplete) cs
   where
-    applyComplete (StringCompleter x name) = FishyCompleterResult (complete x p) name
+    applyComplete (StringCompleter x name) = 
+      FishyCompleterResult (complete x p) name
+
     filterResults (FishyCompleterResult (CompleterResult rs c) name) 
       = FishyCompleterResult 
           (CompleterResult 
             (filter (\(Completion c) -> length c >= length p) rs) c) name
+
+
+
+-- Ranking
+
+-- Short term ranking
+-- Long term ranking

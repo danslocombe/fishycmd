@@ -35,8 +35,11 @@ instance ConcreteTrie Char CharWeight where
   update c (CharWeight _ w) = CharWeight c (w + 1)
   new c = (CharWeight c 1)
   finalHeuristic t = 
-    (fromIntegral $ getFinal t) > 
-    (0.3 * (fromIntegral $ getWeight $ getData t))
+    3 * (getFinal t) > (maxChildWeight)
+    where
+      maxChildWeight = maxorzero $ (getWeight . getData) <$> getChildren t
+      maxorzero [] = 0
+      maxorzero xs = maximum xs
 
 stripQuotes :: String -> String
 stripQuotes = filter (/= '"')
