@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Complete.Trie where
 
@@ -8,7 +10,11 @@ import GHC.Generics
 import Data.Serialize
 import Data.List (sort)
 
-data Trie a = TrieNode a [Trie a] deriving (Generic, Show, Eq, Ord)
+data Trie a = TrieNode 
+  { getData :: a
+  , getChildren :: [Trie a]
+  , getFinal :: Int
+  } deriving (Generic, Show, Eq, Ord)
 
 instance (Serialize a) => Serialize (Trie a)
 
@@ -16,56 +22,87 @@ type Comp   a b = a -> b -> Bool
 type Update a b = a -> b -> b
 type New    a b = a -> b
 
-class ConcreteTrie a b where
+-- Trie typeclass, deals with data of type 'a' stored in the
+-- tries as type 'b'
+class ConcreteTrie a b | b -> a where
+  -- Compare from some 'a' outside the tries and a 'b' already in a trie
   comp   :: Comp a b
+
+  -- Update the 'b' with information from 'a'
   update :: Update a b
+
+  -- Convert 'a' -> 'b'
   new    :: New a b
 
+  -- If we have inserted abcd and abcde into a trie and
+  -- we have input abc, when should we return the former and when the latter?
+  -- finalHeuristic determines when we return the truncated string
+  finalHeuristic :: Trie b -> Bool
+
+-- --- --- -- -- -  - - -- - --- -- --- --- -- 
+
+compTrie :: (ConcreteTrie a b, Eq b) => a -> Trie b -> Bool
+compTrie x t = comp x $ getData t
 
 insertTrie :: (ConcreteTrie a b, Eq b) => [a] -> [Trie b] -> [Trie b]
 insertTrie [] ts = ts
 insertTrie (x:xs) ts = ret 
-  where ts' = fmap upup ts 
-        comptrie = \(TrieNode y _) -> comp x y
-        upup = \t@(TrieNode v children) -> 
-          if comptrie t 
-            then let children' = insertTrie xs children
-              in TrieNode (update x v) children'
+  where -- We run upup over the child nodes
+        -- If there is a match then we recurse down that child
+        ts' = fmap upup ts 
+        upup t@(TrieNode v children f) =
+          if compTrie x t 
+            then 
+              if null xs
+                then t { getData = update x v
+                       , getFinal = f + 1
+                       }
+                else t { getData = update x v
+                       , getChildren = insertTrie xs children
+                       }
             else t
-        -- This is bad, replace with monad?
-        ret = if ts' == ts then ts ++ [TrieNode (new x) (insertTrie xs [])] else ts'
 
-allLists :: Ord b => [Trie b] -> [[b]]
+        -- If we have not updated any of the children then we need to insert
+        -- an additional node
+        ret = if ts' == ts 
+          then ts ++ [
+            TrieNode 
+            { getData = new x
+            , getChildren = insertTrie xs [] 
+            , getFinal = if null xs then 1 else 0
+            }]
+          else ts'
+
+allLists :: [Trie b] -> [[b]]
 allLists ts = concatMap f ts
   where 
-    f :: Ord b => Trie b -> [[b]]
-    f (TrieNode x []) = [[x]]
-    f (TrieNode x cs) = fmap (\ls -> x : ls) (allLists cs)
+    f :: Trie b -> [[b]]
+    f (TrieNode x [] f) = [[x]]
+    f (TrieNode x cs f) = fmap (\ls -> x : ls) (allLists cs)
 
-allTrieMatches :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [[b]]
+allTrieMatches :: (ConcreteTrie a b, Eq b) => [a] -> [Trie b] -> [[b]]
 allTrieMatches [] ts = allLists ts
 allTrieMatches (x:xs) ts = ret
   where
-    -- TODO factor comptrie out
-    comptrie = \(TrieNode y _) -> comp x y
-    tings = filter comptrie ts
-    ret = case tings of 
+    matching = filter (compTrie x) ts
+    ret = case matching of 
       [] -> []
-      ((TrieNode y children):ys) -> fmap (\x -> y:x) (allTrieMatches xs children)
+      ((TrieNode y children f):ys) -> fmap (\x -> y:x) (allTrieMatches xs children)
 
 lookupTrie :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [b]
 lookupTrie [] ts = bestEntry ts
 lookupTrie (x:xs) ts = ret
   where
-    -- TODO factor comptrie out
-    comptrie = \(TrieNode y _) -> comp x y
-    tings = filter comptrie ts
-    ret = case tings of 
+    matching = filter (compTrie x) ts
+    ret = case matching of 
       [] -> []
-      ((TrieNode y children):ys) -> y:(lookupTrie xs children)
+      ((TrieNode y children f):ys) -> y:(lookupTrie xs children)
 
-bestEntry :: Ord a => [Trie a] -> [a]
+bestEntry :: (ConcreteTrie a b, Ord b) => [Trie b] -> [b]
 bestEntry [] = []
-bestEntry ts = best:(bestEntry children)
+bestEntry ts = best:rest
   where
-    (TrieNode best children) = maximum ts 
+    t@(TrieNode best children f) = maximum ts 
+    rest = if finalHeuristic t then [] else bestEntry children
+
+

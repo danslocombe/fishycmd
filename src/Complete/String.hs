@@ -20,7 +20,10 @@ import System.Directory
 import System.Environment
     
 type StringTrie = Trie CharWeight
-data CharWeight = CharWeight Char Int deriving (Generic, Show, Eq)
+data CharWeight = CharWeight 
+  { getChar :: Char
+  , getWeight :: Int
+  } deriving (Generic, Show, Eq)
 
 instance Serialize CharWeight
 
@@ -31,6 +34,9 @@ instance ConcreteTrie Char CharWeight where
   comp c (CharWeight c' _) = c == c'
   update c (CharWeight _ w) = CharWeight c (w + 1)
   new c = (CharWeight c 1)
+  finalHeuristic t = 
+    (fromIntegral $ getFinal t) > 
+    (0.3 * (fromIntegral $ getWeight $ getData t))
 
 stripQuotes :: String -> String
 stripQuotes = filter (/= '"')

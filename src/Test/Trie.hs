@@ -42,7 +42,7 @@ getArb n =
       children = case n2 of
         0 -> return []
         _ -> mapM (\_ -> getArb n2) [0..n]
-  in TrieNode <$> arbitrary <*> children
+  in TrieNode <$> arbitrary <*> children <*> arbitrary
 
 -- Helper Methods --
 
@@ -101,11 +101,12 @@ prop_relevanceMatters (NonEmpty prefix) neSuffixes =
     -- We drop the empty list in the first position
     ts = tail $ scanl (\trie (i, x) -> insertN i x trie) [] (zip [1..] xs)
 
-prop_relevanceCommutes :: NonEmptyStr -> String -> String -> Int -> Int -> Bool
+prop_relevanceCommutes :: NonEmptyStr -> String -> String -> Int -> Int -> Property
 prop_relevanceCommutes (NonEmpty prefix) a b x y = 
-  (lookupTrie prefix $ insertA $ insertB [])
-  ==
-  (lookupTrie prefix $ insertB $ insertA [])
+  x > y ==> 
+    (lookupTrie prefix $ insertA $ insertB [])
+    ==
+    (lookupTrie prefix $ insertB $ insertA [])
   where
     insertA = insertN x (prefix ++ a)
     insertB = insertN y (prefix ++ b)

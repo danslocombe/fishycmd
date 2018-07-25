@@ -2,6 +2,6 @@
 .stack-work
 test.bat
 *.swp
-*.spo
+*.swo
 builds
 *.exe
