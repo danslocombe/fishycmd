@@ -9,6 +9,7 @@ import Shell.State
 import Shell.Update ( updateIOState )
 import Shell.Command ( CommandProcessResult (..) )
 import Shell.Helpers ((?->))
+import Test.Trie
   
 import Control.Monad
 import Control.Monad.Trans.Class
@@ -25,7 +26,9 @@ import qualified Data.Map.Lazy as Map
 data FishyOptions = FishyOptions
   { getClearHistoryOption :: Bool
   , getDebugOption :: Bool
-  , getVerboseOption :: Bool } 
+  , getVerboseOption :: Bool
+  , getTestOption :: Bool
+  } 
 
 parseOptions :: Parser FishyOptions
 parseOptions = FishyOptions
@@ -41,6 +44,10 @@ parseOptions = FishyOptions
      ( long "verbose"
     <> short 'v'
     <> help "Set verbose mode" )
+  <*> switch
+     ( long "test"
+    <> short 't'
+    <> help "Run tests" )
 
 opts :: ParserInfo FishyOptions
 opts = info (parseOptions <**> helper)
@@ -54,6 +61,9 @@ main = do
   options <- execParser opts
   let debug = getDebugOption options
       verbose = getVerboseOption options
+      test = getTestOption options
+
+  test ?-> runTests
 
   -- Create state path if it's missing
   createDirectoryIfMissing True <$> statePath

@@ -49,4 +49,5 @@ executable trie
                      , Shell.Types
                      , Shell.Helpers
                      , Corext.AliasCompleter
+                     , Test.Trie
   extra-lib-dirs:      lib

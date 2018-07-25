@@ -10,6 +10,22 @@ import Data.List (nub)
 import Complete.Trie
 import Complete.String
 
+runTests :: IO ()
+runTests = do
+  putStrLn "lookup new entry"
+  quickCheck prop_lookupNewEntry
+  putStrLn "lookup all new entries"
+  quickCheck prop_lookupAllNewEntries
+  putStrLn "check relevance matters"
+  quickCheck prop_relevanceMatters
+  putStrLn "check relevance commutes"
+  quickCheck prop_relevanceCommutes
+  putStrLn "check relevance associates"
+  quickCheck prop_relevanceAssociates
+  putStrLn "check abc abcd abcde"
+  quickCheck prop_willGivePrefixes
+  return () 
+
 prop_RevRev :: Eq a => [a] -> Bool
 prop_RevRev xs = reverse (reverse xs) == xs
 
@@ -59,12 +75,10 @@ prop_lookupNewEntry s ts =
   in toString (lookup s ts') == s
 
 
-prop_lookupAllNewEntries :: String -> [String] -> [StringTrie] -> Property
-prop_lookupAllNewEntries prefix suffixes trie =
-  length prefix > 0 &&
-  all (\s -> length s > 0) suffixes
-  ==>
-  let fullStrings = map (prefix++) suffixes
+prop_lookupAllNewEntries :: NonEmptyStr -> [NonEmptyStr] -> [StringTrie] -> Bool
+prop_lookupAllNewEntries (NonEmpty prefix) nonEmptysuffixes trie =
+  let suffixes = map (\(NonEmpty s) -> s) nonEmptysuffixes
+      fullStrings = map (prefix++) suffixes
       trie' = foldl (flip insert) trie fullStrings
       res = allMatches prefix trie'
       resStrings = fmap toString res
@@ -108,10 +122,10 @@ prop_relevanceAssociates (NonEmpty prefix) a b c x y z =
 
 -- If we have a prefix abc and a trie with weights (abcd, 10) (abcde, 1) then we 
 -- should give abcd not abcde
-prop_willGivePrefixes :: String -> String -> String -> Int -> Int -> Property
-prop_willGivePrefixes s0 s1 s2 w0 w1 =
+prop_willGivePrefixes :: String -> NonEmptyStr -> NonEmptyStr -> Int -> Int -> Property
+prop_willGivePrefixes s0 (NonEmpty s1) (NonEmpty s2) w0 w1 =
   w1 > w0 && w0 > 0 ==>
-    lookup prefix == abcd
+    (fromCharWeight <$> lookup prefix t) == abcd
     where
       prefix = s0
       abcd = prefix ++ s1
