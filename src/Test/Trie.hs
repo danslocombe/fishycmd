@@ -59,7 +59,7 @@ isPrefix :: (Eq a) => [a] -> [a] -> Bool
 isPrefix xs ys = and $ zipWith (==) xs ys
 
 insertN :: Int -> String -> [StringTrie] -> [StringTrie]
-insertN n s trie = foldl (\t _ -> insert s t) trie [1..n]
+insertN n s trie = foldl (\t _ -> insertTrie s t) trie [1..n]
 
 none :: Foldable t => (a -> Bool) -> t a -> Bool
 none = (not .) . any
@@ -71,16 +71,16 @@ type NonEmptyStr = NonEmptyList Char
 prop_lookupNewEntry :: String -> [StringTrie] -> Property
 prop_lookupNewEntry s ts = 
   length s > 0 ==>
-  let ts' = insert s ts
-  in toString (lookup s ts') == s
+  let ts' = insertTrie s ts
+  in toString (lookupTrie s ts') == s
 
 
 prop_lookupAllNewEntries :: NonEmptyStr -> [NonEmptyStr] -> [StringTrie] -> Bool
 prop_lookupAllNewEntries (NonEmpty prefix) nonEmptysuffixes trie =
   let suffixes = map (\(NonEmpty s) -> s) nonEmptysuffixes
       fullStrings = map (prefix++) suffixes
-      trie' = foldl (flip insert) trie fullStrings
-      res = allMatches prefix trie'
+      trie' = foldl (flip insertTrie) trie fullStrings
+      res = allTrieMatches prefix trie'
       resStrings = fmap toString res
   in prefixesOf fullStrings resStrings
 
@@ -95,7 +95,7 @@ prop_relevanceMatters (NonEmpty prefix) neSuffixes =
     xs = map (prefix++) suffixes
 
     checkLookup :: [StringTrie] -> String -> Bool
-    checkLookup trie suffix = toString (lookup prefix trie) == prefix ++ suffix
+    checkLookup trie suffix = toString (lookupTrie prefix trie) == prefix ++ suffix
 
     ts :: [[StringTrie]]
     -- We drop the empty list in the first position
@@ -103,18 +103,18 @@ prop_relevanceMatters (NonEmpty prefix) neSuffixes =
 
 prop_relevanceCommutes :: NonEmptyStr -> String -> String -> Int -> Int -> Bool
 prop_relevanceCommutes (NonEmpty prefix) a b x y = 
-  (lookup prefix $ insertA $ insertB [])
+  (lookupTrie prefix $ insertA $ insertB [])
   ==
-  (lookup prefix $ insertB $ insertA [])
+  (lookupTrie prefix $ insertB $ insertA [])
   where
     insertA = insertN x (prefix ++ a)
     insertB = insertN y (prefix ++ b)
 
 prop_relevanceAssociates :: NonEmptyStr -> String -> String -> String -> Int -> Int -> Int -> Bool
 prop_relevanceAssociates (NonEmpty prefix) a b c x y z =
-  (lookup prefix $ (insertA . insertB) (insertC []))
+  (lookupTrie prefix $ (insertA . insertB) (insertC []))
   ==
-  (lookup prefix $ insertA ((insertB . insertC) []))
+  (lookupTrie prefix $ insertA ((insertB . insertC) []))
   where
     insertA = insertN x (prefix ++ a)
     insertB = insertN y (prefix ++ b)
@@ -125,7 +125,7 @@ prop_relevanceAssociates (NonEmpty prefix) a b c x y z =
 prop_willGivePrefixes :: String -> NonEmptyStr -> NonEmptyStr -> Int -> Int -> Property
 prop_willGivePrefixes s0 (NonEmpty s1) (NonEmpty s2) w0 w1 =
   w1 > w0 && w0 > 0 ==>
-    (fromCharWeight <$> lookup prefix t) == abcd
+    (fromCharWeight <$> lookupTrie prefix t) == abcd
     where
       prefix = s0
       abcd = prefix ++ s1

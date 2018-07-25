@@ -13,6 +13,7 @@ module Shell.CompleteHandler
 import Complete
 import Complete.FileCompleter
 import Complete.String
+import Complete.Trie (insertTrie)
 import Complete.Types
 import Shell.Types
 
@@ -43,7 +44,7 @@ updateCompletionHandler old prompt dir newCommands = do
   }
   where
     addToTrie :: [StringTrie] -> [StringTrie]
-    addToTrie trie = foldl (flip insert) trie newCommands
+    addToTrie trie = foldl (flip insertTrie) trie newCommands
     global = addToTrie $ getHistoryTries old
     localTries = getLocalizedHistoryTries old
     localTrie = Map.findWithDefault [] dir localTries

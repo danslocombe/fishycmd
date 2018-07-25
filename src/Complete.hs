@@ -16,6 +16,7 @@ module Complete
 
 import Complete.FileCompleter
 import Complete.String
+import Complete.Trie
 import Complete.Types
 import Shell.State
 import Shell.Types
@@ -34,7 +35,7 @@ instance Completer [StringTrie] where
   complete ts p = CompleterResult ss Red
     where
         ss :: [StringCompletion]
-        ss = (Completion . fmap fromCharWeight) <$> allMatches p ts 
+        ss = (Completion . fmap fromCharWeight) <$> allTrieMatches p ts 
 
 splitCompletion :: String -> String -> String
 splitCompletion p c = p ++ compl

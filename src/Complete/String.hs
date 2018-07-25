@@ -1,11 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Complete.String
   ( StringTrie
-  , insert
-  , lookup
-  , allMatches
   , buildTries
   , fromCharWeight
   , parseFilename
@@ -29,6 +27,11 @@ instance Serialize CharWeight
 instance Ord CharWeight where
   (CharWeight _ p) `compare` (CharWeight _ p') = p `compare` p'
 
+instance ConcreteTrie Char CharWeight where
+  comp c (CharWeight c' _) = c == c'
+  update c (CharWeight _ w) = CharWeight c (w + 1)
+  new c = (CharWeight c 1)
+
 stripQuotes :: String -> String
 stripQuotes = filter (/= '"')
 
@@ -42,7 +45,7 @@ parseFilename = stripQuotes . stripDoubleBackslash
 
 -- Build a standard trie for strings
 buildTries :: [String] -> [Trie CharWeight]
-buildTries files = foldr insert [] $ fmap parseFilename files
+buildTries files = foldr insertTrie [] $ fmap parseFilename files
 
 fromCharWeight :: CharWeight -> Char
 fromCharWeight (CharWeight c _) = c
@@ -55,22 +58,3 @@ escapeSpace = concatMap (\x -> case x of
     ' ' -> "\\ "
     y -> [y])
 
--- Trie functions for CharWeight
-
-compCW :: Char -> CharWeight -> Bool
-compCW c (CharWeight c' _) = c == c'
-
-updateCW :: Char -> CharWeight -> CharWeight
-updateCW c (CharWeight _ w) = CharWeight c (w + 1)
-
-newCW :: Char -> CharWeight
-newCW c = (CharWeight c 1)
-
-insert :: String -> [Trie CharWeight] -> [Trie CharWeight]
-insert = insertTrie compCW updateCW newCW
-
-lookup :: String -> [Trie CharWeight] -> [CharWeight]
-lookup = lookupTrie compCW
-
-allMatches :: String -> [Trie CharWeight] -> [[CharWeight]]
-allMatches = allTrieMatches compCW

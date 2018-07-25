@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Complete.Trie where
 
@@ -15,19 +16,24 @@ type Comp   a b = a -> b -> Bool
 type Update a b = a -> b -> b
 type New    a b = a -> b
 
-insertTrie :: Eq b => Comp a b -> Update a b -> New a b -> [a] -> [Trie b] -> [Trie b]
-insertTrie _ _ _ [] ts = ts
-insertTrie comp update new (x:xs) ts = ret 
+class ConcreteTrie a b where
+  comp   :: Comp a b
+  update :: Update a b
+  new    :: New a b
+
+
+insertTrie :: (ConcreteTrie a b, Eq b) => [a] -> [Trie b] -> [Trie b]
+insertTrie [] ts = ts
+insertTrie (x:xs) ts = ret 
   where ts' = fmap upup ts 
-        partialInsert = insertTrie comp update new
         comptrie = \(TrieNode y _) -> comp x y
         upup = \t@(TrieNode v children) -> 
           if comptrie t 
-            then let children' = partialInsert xs children
+            then let children' = insertTrie xs children
               in TrieNode (update x v) children'
             else t
         -- This is bad, replace with monad?
-        ret = if ts' == ts then ts ++ [TrieNode (new x) (partialInsert xs [])] else ts'
+        ret = if ts' == ts then ts ++ [TrieNode (new x) (insertTrie xs [])] else ts'
 
 allLists :: Ord b => [Trie b] -> [[b]]
 allLists ts = concatMap f ts
@@ -36,27 +42,27 @@ allLists ts = concatMap f ts
     f (TrieNode x []) = [[x]]
     f (TrieNode x cs) = fmap (\ls -> x : ls) (allLists cs)
 
-allTrieMatches :: Ord b => Comp a b -> [a] -> [Trie b] -> [[b]]
-allTrieMatches _ [] ts = allLists ts
-allTrieMatches comp (x:xs) ts = ret
+allTrieMatches :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [[b]]
+allTrieMatches [] ts = allLists ts
+allTrieMatches (x:xs) ts = ret
   where
     -- TODO factor comptrie out
     comptrie = \(TrieNode y _) -> comp x y
     tings = filter comptrie ts
     ret = case tings of 
       [] -> []
-      ((TrieNode y children):ys) -> fmap (\x -> y:x) (allTrieMatches comp xs children)
+      ((TrieNode y children):ys) -> fmap (\x -> y:x) (allTrieMatches xs children)
 
-lookupTrie :: Ord b => Comp a b -> [a] -> [Trie b] -> [b]
-lookupTrie _ [] ts = bestEntry ts
-lookupTrie comp (x:xs) ts = ret
+lookupTrie :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [b]
+lookupTrie [] ts = bestEntry ts
+lookupTrie (x:xs) ts = ret
   where
     -- TODO factor comptrie out
     comptrie = \(TrieNode y _) -> comp x y
     tings = filter comptrie ts
     ret = case tings of 
       [] -> []
-      ((TrieNode y children):ys) -> y:(lookupTrie comp xs children)
+      ((TrieNode y children):ys) -> y:(lookupTrie xs children)
 
 bestEntry :: Ord a => [Trie a] -> [a]
 bestEntry [] = []
