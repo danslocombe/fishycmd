@@ -31,7 +31,10 @@ matchChar state currentDir c = case ord c of
   4   -> Exit                         -- EOF (Windows Ctr+D)
   224 -> PrepControlChar              -- Prep character
   75  -> ifControlPrepped $ left p    -- Left if prepped
-  77  -> ifControlPrepped $ right p   -- Right if prepped
+  77  -> ifControlPrepped' $          -- Right if prepped
+         if s' == [] then   -- If we are all the way to the right then complete
+            PartialComplete
+            else Text $ right p  -- Otherwise move cursor
   14  -> HistoryForward               -- Ctrl p
   16  -> HistoryBack                  -- Ctrl n
   72  -> if getControlPrepped state then HistoryBack else Text (push c p)
@@ -42,3 +45,5 @@ matchChar state currentDir c = case ord c of
   where p@(Zip s s') = getPrompt state
         ifControlPrepped r = Text $
           if getControlPrepped state then r else push c p
+        ifControlPrepped' r = 
+          if getControlPrepped state then r else Text $ push c p

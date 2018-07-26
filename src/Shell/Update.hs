@@ -86,7 +86,7 @@ processChar' :: CompletionHandlerResult -> Char -> StateT FishyState IO CommandP
 processChar' completerResult c = do
   state <- get
   currentDir <- lift $ getCurrentDirectory
-  let ci = (matchChar state currentDir) c
+  let ci = matchChar state currentDir c
   processChar completerResult ci
 
 addToHistory :: [String] -> StateT FishyState IO ()
