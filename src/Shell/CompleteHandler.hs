@@ -26,7 +26,7 @@ import System.Console.ANSI
 
 
 firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
-firstCompletionResult (CompletionHandlerResult xs c) = (fromMaybe (Completion []) $ listToMaybe xs, Red)
+firstCompletionResult (CompletionHandlerResult xs c) = (fromMaybe (Completion [] 0) $ listToMaybe xs, Red)
 
 updateCompletionHandler :: CompletionHandler ->
                            Zipper Char ->
@@ -62,7 +62,7 @@ getCurrentCompletion handler prefix currentDir = case length splitS of
              = getCurrentCompletionInner handler prefix currentDir historyCompleters
            (CompletionHandlerResult fs _ )
              = getCurrentCompletionInner handler endPrefix currentDir fileCompleters
-           fs' = fmap (\(Completion c) -> Completion (prefix++(drop n c)))  fs
+           fs' = fmap (\(Completion c s) -> Completion (prefix++(drop n c)) s)  fs
         in CompletionHandlerResult (hs ++ fs') Red
 
   where

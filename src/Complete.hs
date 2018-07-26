@@ -30,12 +30,26 @@ import System.Console.ANSI (Color(Red))
 import Data.Maybe
 import qualified Data.Map.Lazy as Map
 
+toCompletion :: [CharWeight] -> Completion Char
+toCompletion cw = Completion (cwToString cw) (lastOrZero $ getWeight <$> cw)
+  where
+    lastOrZero :: [Int] -> Int
+    lastOrZero [] = 0
+    lastOrZero xs = last xs
+
 instance Completer [StringTrie] where
   type CompleteType [StringTrie] = Char
-  complete ts p = CompleterResult ss Red
+  complete ts p = CompleterResult (toCompletion <$> matches) Red
     where
-        ss :: [StringCompletion]
-        ss = (Completion . fmap fromCharWeight) <$> allTrieMatches p ts 
+        matches = allTrieMatches p ts
+
+instance Completer FileCompleter where
+  type CompleteType FileCompleter = Char
+  complete (FileCompleter _ fs) prefix = CompleterResult cs Red
+    where 
+      -- cs :: [String]
+      cs = (\x -> Completion x 1) <$> filter (Complete.FileCompleter.startsWith prefix) fs
+
 
 splitCompletion :: String -> String -> String
 splitCompletion p c = p ++ compl
@@ -76,7 +90,7 @@ allCompletions cs p = map (filterResults . applyComplete) cs
     filterResults (FishyCompleterResult (CompleterResult rs c) name) 
       = FishyCompleterResult 
           (CompleterResult 
-            (filter (\(Completion c) -> length c >= length p) rs) c) name
+            (filter (\(Completion c _) -> length c >= length p) rs) c) name
 
 
 

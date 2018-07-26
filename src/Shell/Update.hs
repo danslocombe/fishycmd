@@ -29,7 +29,7 @@ draw lastHeight prompt completion color = do
   Just (Window _ ww) <- size
   preprompt <- prePrompt
   cd <- getCurrentDirectory
-  let completionLen = length ((\(Completion c) -> c) completion)
+  let completionLen = length ((\(Completion c _) -> c) completion)
   -- Show all tries
   --putStrLn $ show $ (\(FishyCompleterResult x _) -> x) <$> rs
   drawCompletion lastHeight preprompt prompt completion color
@@ -52,7 +52,7 @@ drawState' result = do
       -- If prompt is empty then dont draw anything
         length (toList prompt) == 0
 
-        then Completion ""
+        then Completion "" 0
         else completion
 
   lph <- lift $ draw lastHeight prompt completion' color
@@ -78,7 +78,7 @@ getCurrentCompletion' = do
   dir <- lift $ getCurrentDirectory
   let handler = getCompletionHandler state
       prompt@(Zip promptL promptR) = getPrompt state
-      def = CompletionHandlerResult [Completion []] Red
+      def = CompletionHandlerResult [Completion [] 0] Red
   return $ getCurrentCompletion handler (reverse promptL) dir
   
 -- Wrap processing an input char with updating state
@@ -131,8 +131,9 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
 
   -- log the completions
   ss <- get
-  cd <- lift $ getCurrentDirectory
-  lift $ logCompletions (toList $ getPrompt ss) cd completion
+  getDebug ss ?-> do
+    cd <- lift $ getCurrentDirectory
+    lift $ logCompletions (toList $ getPrompt ss) cd completion
 
   -- Draw completion then yield for next char
   drawState' completion

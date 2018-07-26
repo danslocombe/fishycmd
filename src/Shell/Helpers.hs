@@ -7,6 +7,8 @@ import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 
+import System.Environment
+
 -- f Only if x
 infix 0 <~?
 (<~?) :: (Monad m) => m a -> m Bool -> m ()
@@ -31,15 +33,22 @@ infix 0 ?->
 ifDebug :: IO () -> StateT FishyState IO ()
 ifDebug f = lift f <~? getDebug <$> get
 
-logpath = "C:\\Users\\daslocom\\fish.log"
+storePath :: IO FilePath
+storePath = do
+  appdata <- getEnv "APPDATA" 
+  return $ appdata ++ "\\fishycmd\\"
 
 logLine :: String -> IO ()
-logLine s = appendFile logpath (s ++ "\n")
+logLine s = do
+  sp <- storePath
+  let logpath = sp ++ "fish.log"
+  appendFile logpath (s ++ "\n")
 
 logCompletions :: String -> String -> CompletionHandlerResult -> IO ()
 logCompletions prefix cd completions = do
   let f :: CompletionHandlerResult -> [String]
-      f (CompletionHandlerResult cs _) = map (\(Completion x) -> x) cs
+      f (CompletionHandlerResult cs _) 
+        = map (\(Completion x w) -> x ++ "[" ++ show w ++ "]") cs
   logLine $ prefix 
     ++ ", "
     ++ cd 

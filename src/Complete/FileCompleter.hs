@@ -57,12 +57,5 @@ backslashToForward = fmap (\c -> case c of
   '\\' -> '/'
   x -> x)
 
-instance Completer FileCompleter where
-  type CompleteType FileCompleter = Char
-  complete (FileCompleter _ fs) prefix = CompleterResult cs Red
-    where 
-      -- cs :: [String]
-      cs = Completion <$> filter (startsWith prefix) fs
-
 startsWith :: String -> String -> Bool
 startsWith xs ys = and $ zipWith (==) xs ys

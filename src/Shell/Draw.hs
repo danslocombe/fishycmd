@@ -22,7 +22,7 @@ drawCompletion' :: Int -> [(String, Color)] -> IO ()
 drawCompletion' = undefined
 
 drawCompletion :: Int -> String -> Zipper Char -> StringCompletion -> Color -> IO ()
-drawCompletion lastHeight preprompt p@(Zip pl pr) (Completion completion) color = do
+drawCompletion lastHeight preprompt p@(Zip pl pr) (Completion completion _) color = do
   let s :: String
       s = toList p
   Just (Window _ ww) <- size

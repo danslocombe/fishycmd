@@ -5,9 +5,10 @@
 module Complete.String
   ( StringTrie
   , buildTries
-  , fromCharWeight
   , parseFilename
   , CharWeight (..)
+  , cwToChar
+  , cwToString
   ) where
 
 import Complete.Trie
@@ -56,8 +57,11 @@ parseFilename = stripQuotes . stripDoubleBackslash
 buildTries :: [String] -> [Trie CharWeight]
 buildTries files = foldr insertTrie [] $ fmap parseFilename files
 
-fromCharWeight :: CharWeight -> Char
-fromCharWeight (CharWeight c _) = c
+cwToChar :: CharWeight -> Char
+cwToChar (CharWeight c _) = c
+
+cwToString :: [CharWeight] -> String
+cwToString = fmap cwToChar
 
 buildFileTries :: String -> IO [Trie CharWeight]
 buildFileTries dir = buildTries <$> (listDirectory =<< getCurrentDirectory)

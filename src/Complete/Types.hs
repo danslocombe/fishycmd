@@ -7,10 +7,10 @@ module Complete.Types where
 
 import System.Console.ANSI.Types
 
-newtype Completion a = Completion [a] deriving Show
+data Completion a = Completion [a] Int deriving Show
 
 instance Eq a => Eq (Completion a) where
-  (Completion x) == (Completion y) = x == y
+  (Completion x n) == (Completion y m) = x == y
 
 data CompleterResult a = CompleterResult [Completion a] Color deriving Show
 

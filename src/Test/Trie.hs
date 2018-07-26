@@ -48,8 +48,8 @@ getArb n =
 
 -- Helper Methods --
 
-toString :: Functor f => f CharWeight -> f Char
-toString = fmap fromCharWeight
+--toString :: Functor f => f CharWeight -> f Char
+--toString = fmap fromCharWeight
 
 prefixesOf :: (Eq a, Traversable t) => t [a] -> t [a] -> Bool
 prefixesOf containee container =
@@ -74,7 +74,7 @@ prop_lookupNewEntry :: String -> [StringTrie] -> Property
 prop_lookupNewEntry s ts = 
   length s > 0 ==>
   let ts' = insertTrie s ts
-  in toString (lookupTrie s ts') == s
+  in cwToString (lookupTrie s ts') == s
 
 
 prop_lookupAllNewEntries :: NonEmptyStr -> [NonEmptyStr] -> [StringTrie] -> Bool
@@ -83,7 +83,7 @@ prop_lookupAllNewEntries (NonEmpty prefix) nonEmptysuffixes trie =
       fullStrings = map (prefix++) suffixes
       trie' = foldl (flip insertTrie) trie fullStrings
       res = allTrieMatches prefix trie'
-      resStrings = fmap toString res
+      resStrings = fmap cwToString res
   in prefixesOf fullStrings resStrings
 
 prop_relevanceMatters :: NonEmptyStr -> [NonEmptyStr] -> Property
@@ -97,7 +97,7 @@ prop_relevanceMatters (NonEmpty prefix) neSuffixes =
     xs = map (prefix++) suffixes
 
     checkLookup :: [StringTrie] -> String -> Bool
-    checkLookup trie suffix = toString (lookupTrie prefix trie) == prefix ++ suffix
+    checkLookup trie suffix = cwToString (lookupTrie prefix trie) == prefix ++ suffix
 
     ts :: [[StringTrie]]
     -- We drop the empty list in the first position
@@ -128,7 +128,7 @@ prop_relevanceAssociates (NonEmpty prefix) a b c x y z =
 prop_willGivePrefixes :: String -> NonEmptyStr -> NonEmptyStr -> Int -> Int -> Property
 prop_willGivePrefixes s0 (NonEmpty s1) (NonEmpty s2) w0 w1 =
   w1 > w0 && w0 > 0 ==>
-    (fromCharWeight <$> lookupTrie prefix t) == abcd
+    (cwToString $ lookupTrie prefix t) == abcd
     where
       prefix = s0
       abcd = prefix ++ s1
@@ -139,4 +139,4 @@ prop_willGivePrefixes s0 (NonEmpty s1) (NonEmpty s2) w0 w1 =
 
 prop_suggestPrefix :: [StringTrie] -> NonEmptyStr -> Bool
 prop_suggestPrefix st (NonEmpty p) = 
-  p == (fromCharWeight <$> (lookupTrie p $ insertTrie p []))
+  p == (cwToString $ (lookupTrie p $ insertTrie p []))

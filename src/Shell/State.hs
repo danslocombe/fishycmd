@@ -4,7 +4,7 @@ module Shell.State
     , saveState
     , ifDebug
     , cleanState
-    , statePath
+    , storePath
     ) where
 
 import Complete.String
@@ -84,11 +84,6 @@ genPathTries = do
 stateFilename :: String
 stateFilename = "trie.file"
 
-statePath :: IO FilePath
-statePath = do
-  appdata <- getEnv "APPDATA" 
-  return $ appdata ++ "\\fishycmd\\"
-
 -- Unused
 printEnvironment :: IO ()
 printEnvironment = do
@@ -105,7 +100,7 @@ serializableFromFishy fs =
 -- Save state by serializing history tries
 saveState :: FishyState -> IO ()
 saveState s = do
-  filepath <- statePath
+  filepath <- storePath
   let verbose = getVerbose s
       writePath = filepath ++ stateFilename
       sstate = serializableFromFishy s
@@ -114,7 +109,7 @@ saveState s = do
 -- Load state by deserializing history tries
 loadState :: Bool -> Bool -> IO FishyState
 loadState debug verbose = do
-  filepath <- statePath
+  filepath <- storePath
   let readPath = filepath ++ stateFilename
 
   verbose ?->

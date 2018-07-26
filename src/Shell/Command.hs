@@ -24,6 +24,7 @@ import Data.List.Zipper hiding (insert)
 import qualified Data.Map.Lazy as Map
 
 data CommandInput = Text (Zipper Char)
+                  | Cls
                   | Complete
                   | PartialComplete
                   | Run
@@ -107,7 +108,7 @@ processChar handlerResult ci = do
       (Zip promptL promptR) = getPrompt state
       historyLogs = getHistoryLogs state
       defaultReturn = return $ CommandProcessResult [] True False
-      (Completion completion, _) = firstCompletionResult handlerResult
+      (Completion completion _, _) = firstCompletionResult handlerResult
 
   case ci of 
     -- Update using new prompt state
@@ -119,6 +120,10 @@ processChar handlerResult ci = do
         , getCompletionHandler = resetCompletionHandler (getCompletionHandler state)
         , getControlPrepped = False}
       defaultReturn
+
+    Cls -> do
+      execCommand "cls"
+      return $ CommandProcessResult [] False False
 
     -- Exit the shell
     Exit -> return $ CommandProcessResult [] False True
@@ -150,10 +155,10 @@ processChar handlerResult ci = do
           comps' = nub comps
           i = getCycle handler
           compNow = fromMaybe [] 
-                    ((\(Completion x) -> x) <$> (comps' !%! i))
+                    ((\(Completion x _) -> x) <$> (comps' !%! i))
           i' = getCycle handler'
           compNext = fromMaybe [] 
-                    ((\(Completion x) -> x) <$> (comps' !%! i'))
+                    ((\(Completion x _) -> x) <$> (comps' !%! i'))
 
       put $ 
         if compNow == prefix then

@@ -4,7 +4,7 @@ import Shell.State
   ( FishyState
   , cleanState
   , loadState
-  , statePath
+  , storePath
   )
 import Shell.Update ( updateIOState )
 import Shell.Command ( CommandProcessResult (..) )
@@ -66,7 +66,7 @@ main = do
   test ?-> runTests
 
   -- Create state path if it's missing
-  createDirectoryIfMissing True <$> statePath
+  createDirectoryIfMissing True <$> storePath
 
   -- Draw entry header
   putStrLn entryString
@@ -94,7 +94,7 @@ fishyLoop cpr state = do
     ?-> fishyLoop res state'
 
 entryString :: String
-entryString = ""
+entryString = ">°))))< v0.2"
 
 entryString2 :: String
 entryString2 = "\n\
