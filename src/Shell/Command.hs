@@ -13,13 +13,15 @@ import Shell.Types
 
 import System.Signal
 import Data.Maybe
-import Data.List (nub)
+import Data.List (nub, lookup)
+import Data.Char (isSpace)
 import Control.Monad.Trans.State.Strict
 import Control.Monad.Trans.Class
 import Data.List.Split
 import System.Process
 import System.Console.ANSI
 import System.Directory
+import System.IO
 import Data.List.Zipper hiding (insert)
 import qualified Data.Map.Lazy as Map
 
@@ -35,7 +37,7 @@ data CommandInput = Text (Zipper Char)
                   | HistoryForward
 
 killHandler :: ProcessHandle -> Handler
-killHandler phandle _ = terminateProcess phandle
+killHandler phandle _ = interruptProcessGroupOf phandle
 
 -- We have an idea of 'special' commands that hold side effects
 -- these are handled by the shell rather than external calls
@@ -84,11 +86,18 @@ execCommand c = case splitOn " " c of
     let special = Prelude.lookup x specialCommandMap
     ret <- case special of
       Just specialCmd -> runSpecial xs specialCmd
-      Nothing -> lift $ do 
-        phandle <- spawnCommand c
-        installHandler sigINT (\sig -> do {putStrLn "KILLING SPAWNED PROCESS"; killHandler phandle sig})
-        waitForProcess phandle
-        return False
+      Nothing -> do 
+        let x = (shell c) {create_group = True}
+        (_, _, _, phandle) <- lift $ createProcess x
+        lift $ installHandler sigINT 
+          (\sig -> do {
+              -- putStrLn "KILLING SPAWNED PROCESS"; 
+              killHandler phandle sig; hFlush stdout})
+        lift $ waitForProcess phandle
+        s <- get
+        put $ s {getPrompt = empty, getCachedCompletions = CompletionHandlerResult [] Red}
+        s' <- get
+        lift $ return False
     lift $ putStr "\n"
     lift $ return ret
   -- Blank input
@@ -100,8 +109,8 @@ data CommandProcessResult = CommandProcessResult
   , getExit              :: Bool
   } deriving Show
 
-processChar :: CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
-processChar handlerResult ci = do
+processChar :: [(String, String)] -> CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
+processChar aliases handlerResult ci = do
   -- Scrape info from state
   state <- get
   let s = toList $ getPrompt state
@@ -176,7 +185,13 @@ processChar handlerResult ci = do
 
     -- Execute some other command
     Execute command -> do
-      exitcode <- lift $ system command
+      let trim :: String -> String
+          trim = f . f
+            where f = reverse . dropWhile isSpace
+          toExec = case lookup (trim command) aliases of
+            Just x -> x
+            Nothing -> command
+      exitcode <- lift $ system toExec
       defaultReturn
 
     -- Some inputs (up, down, etc) are represented by two characters

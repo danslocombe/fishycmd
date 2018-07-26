@@ -65,3 +65,6 @@ drawCompletion lastHeight preprompt p@(Zip pl pr) (Completion completion _) colo
   -- cursorUp $ thisHeight - ((len `div` ww) + 1)
   setCursorColumn $ len `mod` ww
   hFlush stdout
+
+  -- cursorDown 1
+  -- putStrLn  drawstr

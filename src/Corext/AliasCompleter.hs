@@ -9,7 +9,7 @@ import Data.List (intersperse)
 import System.Environment
 
 inetroot :: IO (Maybe String)
-inetroot = lookup "%INETROOT%" <$> getEnvironment
+inetroot = lookup "INETROOT" <$> getEnvironment
 
 inCorext :: IO Bool
 inCorext = isJust <$> inetroot

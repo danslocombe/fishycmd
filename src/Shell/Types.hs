@@ -49,5 +49,6 @@ data FishyState = FishyState
   , getDebug                 :: Bool
   , getVerbose               :: Bool
   , getHistoryLogs           :: Zipper String
+  , getAliases               :: [(String, String)]
   } deriving (Show)
 

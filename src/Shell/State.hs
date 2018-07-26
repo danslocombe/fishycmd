@@ -33,8 +33,8 @@ import qualified Data.Map.Lazy as Map
 import qualified Data.ByteString as BS
   
 -- Initialize a new 'clean' fishy state
-cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
-cleanState debug verbose global local = do
+cleanState :: [(String, String)] -> Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
+cleanState aliases debug verbose global local = do
   handler <- (CompletionHandler global local
     <$> genPathyTries debug
     <*> createFileCompleter (FileCompleter "" []) ""
@@ -50,11 +50,21 @@ cleanState debug verbose global local = do
     <*> return debug
     <*> return verbose
     <*> return empty
+    <*> return aliases
 
 genPathyTries :: Bool -> IO [StringTrie]
-genPathyTries debug = inCorext >>= \x -> if x
-  then genCorextTries 
-  else genPathTries debug
+genPathyTries debug = do
+  c <- inCorext
+  logLine $ show c
+
+  if c 
+    then genCorextTries 
+    else genPathTries debug
+
+-- genAliases :: IO [(String, String)]
+-- genAliases = do
+  -- c <- inCorext
+  -- if c then 
 
 genCorextTries :: IO [StringTrie]
 genCorextTries = putStrLn "Using CoreXT for completions" >>     
@@ -108,8 +118,8 @@ saveState s = do
   BS.writeFile (filepath ++ stateFilename) $ encode sstate
 
 -- Load state by deserializing history tries
-loadState :: Bool -> Bool -> IO FishyState
-loadState debug verbose = do
+loadState :: [(String, String)] -> Bool -> Bool -> IO FishyState
+loadState aliases debug verbose = do
   filepath <- storePath
   let readPath = filepath ++ stateFilename
 
@@ -129,7 +139,7 @@ loadState debug verbose = do
   case d' of
     (Right (SerializableState h l)) -> do
       verbose ?-> putStrLn "Success!"
-      cleanState debug verbose h l
+      cleanState aliases debug verbose h l
     (Left err) -> do
       verbose ?-> putStrLn "Failed! Creating blank state"
-      cleanState debug verbose [] Map.empty
+      cleanState aliases debug verbose [] Map.empty

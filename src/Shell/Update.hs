@@ -87,7 +87,7 @@ processChar' completerResult c = do
   state <- get
   currentDir <- lift $ getCurrentDirectory
   let ci = matchChar state currentDir c
-  processChar completerResult ci
+  processChar (getAliases state) completerResult ci
 
 addToHistory :: [String] -> StateT FishyState IO ()
 addToHistory cs = do

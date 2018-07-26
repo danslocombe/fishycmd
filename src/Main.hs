@@ -73,8 +73,8 @@ main = do
 
   -- Load state from file unless clearHistory is set
   state <- if getClearHistoryOption options 
-    then cleanState debug verbose [] Map.empty
-    else loadState debug verbose
+    then cleanState [] debug verbose [] Map.empty
+    else loadState [] debug verbose
 
   -- No new commands
   -- Rebuild completers
@@ -94,7 +94,7 @@ fishyLoop cpr state = do
     ?-> fishyLoop res state'
 
 entryString :: String
-entryString = "Fishy v0.2     >°))))<"
+entryString = "Fishy v0.3     >°))))<"
 
 entryString2 :: String
 entryString2 = "\n\
