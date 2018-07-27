@@ -36,7 +36,7 @@ parseAliases = do
   let aliases = map (splitOn "=") aliasesRaw
       aliasKeysWhitespace = mapMaybe headMay aliases
       aliasKeys :: [String] =  mapMaybe (headMay . (splitOn " ")) aliasKeysWhitespace
-  putStrLn $ "CoreXT keys : " ++ (concat $ intersperse " " aliasKeys)
+  -- putStrLn $ "CoreXT keys : " ++ (concat $ intersperse " " aliasKeys)
   return aliasKeys
 
 parseAliases2 :: String -> IO (Maybe [Alias])

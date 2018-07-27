@@ -40,10 +40,12 @@ fishyCD rawArg = do
   x <- lift $ sequence $ processCDArg rawArg
   case x of
     Just arg -> do
-      exists <- lift $ doesPathExist rawArg
+      let arg' = reverse $ dropWhile (==' ') $ reverse arg -- todo make whitespace stripping nicer
+      ifDebug $ putStrLn ("Cd ing to \"" ++ arg' ++ "\"")
+      exists <- lift $ doesPathExist arg'
       if exists
       then do
-        lift $ setCurrentDirectory rawArg
+        lift $ setCurrentDirectory arg'
         dir <- lift $ getCurrentDirectory
         lift $ return ()
       else lift $ putStrLn "Error: fishy directory"
@@ -60,7 +62,7 @@ instance Show CDTarget where
         Just (DriveName drive) -> drive ++ ":"
         Nothing -> ""
       parts = show <$> fs
-      joined = concat $ intersperse "/" parts
+      joined = concat $ intersperse "\\" parts
 
 data CDPart = FolderName String
             | EnvVar String

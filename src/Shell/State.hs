@@ -41,7 +41,7 @@ cleanState debug verbose global local = do
       Just x -> x;
       Nothing -> [];
   }
-  putStrLn $ unlines $ show <$> aliases'
+  -- putStrLn $ unlines $ show <$> aliases'
   handler <- (CompletionHandler global local
     <$> genPathyTries debug
     <*> createFileCompleter (FileCompleter "" []) ""
