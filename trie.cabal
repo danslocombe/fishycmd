@@ -33,6 +33,7 @@ executable trie
                      , regex-posix >= 0.95.2
                      , terminal-size >= 0.3.2.1
                      , signal >= 0.1.0.3
+                     , parsec >= 3.1.11
                      -- , lens >= 4.15.1
                      , QuickCheck >= 2.9.2
   other-modules:       Complete

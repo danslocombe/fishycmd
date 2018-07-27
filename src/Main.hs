@@ -73,8 +73,8 @@ main = do
 
   -- Load state from file unless clearHistory is set
   state <- if getClearHistoryOption options 
-    then cleanState [] debug verbose [] Map.empty
-    else loadState [] debug verbose
+    then cleanState debug verbose [] Map.empty
+    else loadState debug verbose
 
   -- No new commands
   -- Rebuild completers

@@ -6,6 +6,8 @@ module Shell.Types
   , CompletionHandlerResult (..)
   , SerializableState       (..)
   , FishyState              (..)
+  , Alias                   (..)
+  , AliasElem               (..)
   ) where
 
 
@@ -49,6 +51,13 @@ data FishyState = FishyState
   , getDebug                 :: Bool
   , getVerbose               :: Bool
   , getHistoryLogs           :: Zipper String
-  , getAliases               :: [(String, String)]
+  , getAliases               :: [Alias]
   } deriving (Show)
 
+data Alias = Alias String [AliasElem] 
+  deriving (Show, Eq)
+
+data AliasElem = AliasStr String
+               | AliasArgWildCard
+               | AliasArg Int
+  deriving (Show, Eq)

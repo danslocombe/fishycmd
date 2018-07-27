@@ -25,6 +25,8 @@ import System.IO
 import Data.List.Zipper hiding (insert)
 import qualified Data.Map.Lazy as Map
 
+import Corext.AliasCompleter
+
 data CommandInput = Text (Zipper Char)
                   | Cls
                   | Complete
@@ -109,7 +111,7 @@ data CommandProcessResult = CommandProcessResult
   , getExit              :: Bool
   } deriving Show
 
-processChar :: [(String, String)] -> CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
+processChar :: [Alias] -> CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
 processChar aliases handlerResult ci = do
   -- Scrape info from state
   state <- get
@@ -140,10 +142,14 @@ processChar aliases handlerResult ci = do
     -- Run what is entered by user
     Run -> do
       dirToInsert <- lift $ getCurrentDirectory
-      exitQuestionMark <- execCommand s
+      let trim :: String -> String
+          trim = f . f
+            where f = reverse . dropWhile isSpace
+          toExec = aliasComplete aliases $ trim s
+      exitQuestionMark <- execCommand toExec
       state' <- get
       put $ state' {getPrompt = empty}
-      lift $ return $ CommandProcessResult [s] True exitQuestionMark
+      lift $ return $ CommandProcessResult [toExec] True exitQuestionMark
 
     -- Should we cycle full completions?
     Complete -> do
@@ -185,13 +191,7 @@ processChar aliases handlerResult ci = do
 
     -- Execute some other command
     Execute command -> do
-      let trim :: String -> String
-          trim = f . f
-            where f = reverse . dropWhile isSpace
-          toExec = case lookup (trim command) aliases of
-            Just x -> x
-            Nothing -> command
-      exitcode <- lift $ system toExec
+      exitcode <- lift $ system command
       defaultReturn
 
     -- Some inputs (up, down, etc) are represented by two characters
