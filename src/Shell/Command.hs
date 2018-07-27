@@ -10,6 +10,7 @@ import Complete
 import Shell.State
 import Shell.CompleteHandler
 import Shell.Types
+import Shell.FishyCommand
 
 import System.Signal
 import Data.Maybe
@@ -41,53 +42,16 @@ data CommandInput = Text (Zipper Char)
 killHandler :: ProcessHandle -> Handler
 killHandler phandle _ = interruptProcessGroupOf phandle
 
--- We have an idea of 'special' commands that hold side effects
--- these are handled by the shell rather than external calls
-
-data SpecialCommand = CD | EXIT
-
-specialCommandMap = 
-  [ ("cd", CD)
-  , ("exit", EXIT)
-  ]
-
-runSpecial :: [String] -> SpecialCommand -> StateT FishyState IO Bool
-runSpecial args cmd = do
-  ifDebug $ putStrLn "Running special command..."
-  case cmd of
-    CD -> let arg = (case args of
-                       [] -> ""
-                       [""] -> ""
-                       xs -> foldr1 (\x y -> x ++ " " ++ y) xs)
-      in fishyCD arg >> (lift $ return False)
-    EXIT -> lift $ return True
-
-fishyCD :: String -> StateT FishyState IO ()
-fishyCD "" = lift $ (putStrLn =<< getCurrentDirectory)
-fishyCD arg = do 
-  ifDebug $ putStrLn ("Cd ing to \"" ++ arg ++ "\"")
-  exists <- lift $ doesPathExist arg
-  if exists
-  then do
-    lift $ setCurrentDirectory arg
-    dir <- lift $ getCurrentDirectory
-    lift $ return ()
-    -- files <- lift $ listDirectory dir
-    -- state <- get
-    -- fileTries' <- lift $ buildFileTries dir
-    -- put state {getFileTries = fileTries'}
-  else lift $ putStrLn "Error: fishy directory"
-
 execCommand :: String -> StateT FishyState IO Bool
 execCommand "" = lift $ putStr "\n" >> return False
 execCommand c = case splitOn " " c of 
   -- Extract first 'word'
   (x:xs) -> do
     lift $ putStr "\n"
-    -- Try and match against a special command, otherwise act normal
-    let special = Prelude.lookup x specialCommandMap
-    ret <- case special of
-      Just specialCmd -> runSpecial xs specialCmd
+    -- Try and match against a fishy command, otherwise act normal
+    let fishy = Prelude.lookup x fishyCommandMap
+    ret <- case fishy of
+      Just fishyCmd -> runFishy xs fishyCmd
       Nothing -> do 
         let x = (shell c) {create_group = True}
         (_, _, _, phandle) <- lift $ createProcess x
