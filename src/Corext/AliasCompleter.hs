@@ -46,11 +46,6 @@ parseAliases2 filename = do
     Right x -> return $ Just x
     _ -> return Nothing
 
---data Alias = Alias String String ArgPos
-
---data ArgPos = ArgWildCard Int
-            -- | ArgNumber [Int]
-
 parseAliasArgWildCard :: Stream s m Char => ParsecT s u m AliasElem
 parseAliasArgWildCard = string "$*" >> return AliasArgWildCard
 
@@ -80,7 +75,6 @@ parseAliasDef = do
 
 parseAllAliasDefs :: Stream s m Char => ParsecT s u m [Alias]
 parseAllAliasDefs = many $ do {x <- parseAliasDef; newline; return x} 
-  --x <- Text.Parsec.sepBy1 parseAliasDef newline
 
 applyAlias :: Alias -> String -> Maybe String
 applyAlias (Alias alias rewrite) c = do
@@ -93,9 +87,6 @@ aliasComplete [] s = s
 aliasComplete (x:xs) s = case applyAlias x s of
   Just s' -> s'
   Nothing -> aliasComplete xs s
-
---startsWith :: [a] -> [a] -> Bool
---startsWith x y = all $ zipWith (==) x y
 
 testAliases :: String -> IO String
 testAliases s = do
@@ -112,37 +103,3 @@ subs _ (AliasStr s) = s
 subs args AliasArgWildCard = concat $ intersperse " " args
 -- Args are 1-indexed
 subs args (AliasArg n) = args !! (n-1)
-
---applyAlias2 :: [AliasElem] -> [String] -> [String]
---applyAlias2 [] _ = []
---applyAlias2 (AliasStr s):xs args = s : applyAlias2 xs args
---applyAlias2 AliasArgWildCard:xs args = (concat $ intersperse " " args) ++ applyAlias2 xs []
---applyAlias2 (AliasArg Int):xs
---
---applyAlias :: Alias -> [String] -> String
---applyAlias (Alias _ rewrite (ArgWildCard p)) args = s
-  --where
-    --argWildCardLen = 2
-    --allArgs = concat $ intersperse " " args
-    --s0 = take p rewrite
-    --s1 = allArgs
-    --s2 = drop (p + argWildCardLen) rewrite
-    --s = concat [s0, s1, s2]
---
---applyAlias (Alias _ rewrite (ArgNumber ps)) args = ret
-    ---- Only support up to $9 for now
-    --where
-      --argStringLen = 2
-      --argsInf = args ++ repeat []
-      --substitutions = zip ps argsInf
-      --ret = foldl (
-          -- --\s (subpos, substr) -> 
-          --substitute s substr subpos 2 
-        --) rewrite substitutions
---
---substitute :: String -> String -> Int -> Int -> String
---substitute s input pos sublen =
-  --concat [take pos s, input, drop (pos+sublen) s]
---
---testAlias :: Alias -> String -> Bool
-----------testAlias = undefined

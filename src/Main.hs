@@ -94,7 +94,7 @@ fishyLoop cpr state = do
     ?-> fishyLoop res state'
 
 entryString :: String
-entryString = "Fishy v0.3     >°))))<"
+entryString = "Fishy v0.4     >°))))<"
 
 entryString2 :: String
 entryString2 = "\n\
