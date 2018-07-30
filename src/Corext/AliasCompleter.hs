@@ -80,9 +80,16 @@ parseAllAliasDefs = many $ do {x <- parseAliasDef; newline; return x}
 
 applyAlias :: Alias -> String -> Maybe String
 applyAlias (Alias alias rewrite) c = do
-  args <- stripPrefix alias c
-  let argSplit = words args
-  return $ applyArgs rewrite argSplit
+  -- Try and strip the alias from the front of the command
+  rest <- stripPrefix alias c
+  args <- case rest of 
+    -- End of input, so no args
+    [] -> Just []
+    -- A space so args are coming
+    ' ':xs -> Just $ words xs
+    -- Not a space, so the match was incorrect
+    _ -> Nothing
+  return $ applyArgs rewrite args
 
 aliasComplete :: [Alias] -> String -> String
 aliasComplete [] s = s
@@ -96,13 +103,12 @@ testAliases s = do
   return $ aliasComplete (fromJust aliases) s
 
 applyArgs :: [AliasElem] -> [String] -> String
-applyArgs alias args = concat $ intersperse " " substituted
+applyArgs alias args = concat substituted
   where
     substituted = subs args <$> alias
 
 subs :: [String] -> AliasElem -> String
 subs _ (AliasStr s) = s
---subs args AliasArgWildCard = concat $ intersperse " " args
 subs args AliasArgWildCard = concat args
 subs args (AliasArg n) = ret
   where
