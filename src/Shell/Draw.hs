@@ -12,11 +12,82 @@ import System.Environment
 import System.Console.ANSI
 import System.Console.Terminal.Size
 import System.IO
+import Data.List.Split
+import Data.List (intersperse)
 
 prePrompt :: IO String
 prePrompt = do 
   pwd <- getCurrentDirectory
-  return $ parseFilename (show pwd)  ++ ">>> "
+  let processed = processPromptSafe $ parseFilename $ show pwd
+      pre = case processed of
+        Just x -> x
+        Nothing -> ">°))))<  "
+  return $ pre ++ ">>> "
+
+promptTargetLength = 25
+
+processPromptSafe :: String -> Maybe String
+processPromptSafe p = do
+  let chopped = splitOn  "\\" p
+
+  -- Abort on length 0
+  n <- case length chopped of 
+    0 -> Nothing
+    x -> Just x
+
+  -- Well defined as |chopped| > 0
+  let chopped' = init chopped
+      cd = last chopped
+
+      (half0, half1) = splitAt (n `div` 2) chopped'
+
+      removeVowels :: String -> Maybe String
+      removeVowels [] = Nothing
+      removeVowels (x:xs) = Just $ x : (filter (\x -> not $ x `elem` "aeiouAEIOU") xs)
+
+      safeFirst [] = Nothing
+      safeFirst (x:xs) = Just [x]
+
+      (+^+) :: Monad m => m [a] -> m [a] -> m [a]
+      (+^+) = liftM2 (++)
+
+      toTry :: [Maybe [String]]
+      toTry =
+        [ (sequence $ removeVowels <$> half0) +^+ (Just half1)
+        , sequence $ removeVowels <$> chopped'
+        , (sequence $ safeFirst <$> half0) +^+ (sequence $ removeVowels <$> half1)
+        , sequence $ safeFirst <$> chopped'
+        ]
+
+  toTry' <- sequence toTry
+  let applied = map (concat . intersperse "\\") toTry' :: [String]
+
+  return $ case dropWhile (\x -> length x > promptTargetLength) applied of
+    [] -> concat $ intersperse "\\" $ last toTry'
+    x:_ -> x
+   
+
+processPrompt :: String -> String
+processPrompt p = ret ++ "\\" ++ cd
+  where
+    chopped = splitOn "\\" p
+    cd = last chopped
+    chopped' = init chopped
+    n = length chopped'
+    (half0, half1) = splitAt (n `div` 2) chopped'
+
+    removeVowels [] = []
+    removeVowels (x:xs) = x : (filter (\x -> not $ x `elem` "aeiouAEIOU") xs)
+    toTry =
+      [(removeVowels <$> half0) ++ half1,
+       removeVowels <$> chopped',
+       (return . head <$> half0) ++ half1,
+       (return . head <$> half0) ++ (removeVowels <$> half1),
+       (return . head <$> half0) ++ (return . head <$> half1)
+       ]
+    applied = map (concat . intersperse "\\") toTry :: [String]
+    ret = head $ (dropWhile (\x -> length x > promptTargetLength) applied)             ++ last toTry
+
 
 drawCompletion' :: Int -> [(String, Color)] -> IO ()
 drawCompletion' = undefined
