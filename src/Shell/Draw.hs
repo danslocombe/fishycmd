@@ -62,9 +62,11 @@ processPromptSafe p = do
   toTry' <- sequence toTry
   let applied = map (concat . intersperse "\\") toTry' :: [String]
 
-  return $ case dropWhile (\x -> length x > promptTargetLength) applied of
-    [] -> concat $ intersperse "\\" $ last toTry'
-    x:_ -> x
+  let base = case dropWhile (\x -> length x > promptTargetLength) applied of
+        [] -> concat $ intersperse "\\" $ last toTry'
+        x:_ -> x
+
+  return $ base ++ "\\" ++ cd
    
 
 processPrompt :: String -> String
