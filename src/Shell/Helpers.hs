@@ -55,3 +55,8 @@ logCompletions prefix cd completions = do
     ++ " ->\n"
     ++ (unlines (f completions))
     ++ "\n\n"
+
+(!?!) :: [a] -> Int -> Maybe a
+(!?!) [] _ = Nothing
+(!?!) (x:_) 0 = Just x
+(!?!) (x:xs) n = xs !?! (n-1)

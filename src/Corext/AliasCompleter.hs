@@ -8,6 +8,7 @@ import Data.Maybe
 import Data.List.Split hiding (oneOf)
 import Data.List (intersperse)
 import System.Environment
+import Shell.Helpers
 
 import Text.Parsec
 import Text.Parsec.Char
@@ -40,11 +41,12 @@ parseAliases = do
   return aliasKeys
 
 parseAliases2 :: String -> IO (Maybe [Alias])
-parseAliases2 filename = do
-  aliasesRaw <- readFile =<< aliasPath
-  case parse parseAllAliasDefs filename aliasesRaw of
-    Right x -> return $ Just x
-    _ -> return Nothing
+parseAliases2 filename = inCorext >>= \incorext -> if incorext then do
+    aliasesRaw <- readFile =<< aliasPath
+    case parse parseAllAliasDefs filename aliasesRaw of
+      Right x -> return $ Just x
+      _ -> return Nothing
+  else return Nothing
 
 parseAliasArgWildCard :: Stream s m Char => ParsecT s u m AliasElem
 parseAliasArgWildCard = string "$*" >> return AliasArgWildCard
@@ -100,6 +102,14 @@ applyArgs alias args = concat $ intersperse " " substituted
 
 subs :: [String] -> AliasElem -> String
 subs _ (AliasStr s) = s
-subs args AliasArgWildCard = concat $ intersperse " " args
--- Args are 1-indexed
-subs args (AliasArg n) = args !! (n-1)
+--subs args AliasArgWildCard = concat $ intersperse " " args
+subs args AliasArgWildCard = concat args
+subs args (AliasArg n) = ret
+  where
+  -- Args are 1-indexed
+  -- might be out of bounds
+  arg = args !?! (n-1)
+  -- Handle out of bounds
+  ret = maybe "" id arg
+    
+
