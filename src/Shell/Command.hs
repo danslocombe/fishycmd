@@ -4,6 +4,7 @@ module Shell.Command
     , CommandProcessResult (..)
     , CommandInput         (..)
     , moveBlockLeft
+    , removeBlockLeft
     , moveBlockRight
     ) where
 
@@ -249,6 +250,11 @@ moveBlockRight z@(Zip back forwards) = ret
     (xs, ys, ms) = splitReturnFirstNonTrivial forwards " /\\"
     ret = Zip (maybeToList ms ++ reverse xs ++ back) ys
 
+removeBlockLeft :: Zipper Char -> Zipper Char
+removeBlockLeft z@(Zip back forwards) = ret
+  where
+    (xs, ys, ms) = splitReturnFirstNonTrivial back " /\\"
+    ret = Zip ys forwards
 
 splitReturnFirstNonTrivial :: Eq a => [a] -> [a] -> ([a], [a], Maybe a)
 splitReturnFirstNonTrivial [] splits = ([], [], Nothing)
@@ -263,5 +269,3 @@ splitReturnFirst (x:xs) splits =
     then ([], xs, Just x)
     else let (ys, ys', s) = splitReturnFirst xs splits in
          (x:ys, ys', s)
-
-

@@ -23,7 +23,7 @@ matchChar state currentDir c = case ord c of
   10  -> Run                          -- Newline
   13  -> Run                          -- Newline (Windows)
   8   -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows)
-  127 -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows Ctr+backspace)
+  127 -> Text $ removeBlockLeft p            -- Backspace (Windows Ctr+backspace)
   6   -> Complete                     -- Complete (Windows Ctr+F form feed)
   9   -> PartialComplete              -- Partial complete (Tab)
   12  -> Cls                          -- Clear screen (Ctr+L)
