@@ -35,6 +35,8 @@ matchChar state currentDir c = case ord c of
          if s' == [] then   -- If we are all the way to the right then complete
             PartialComplete
             else Text $ right p  -- Otherwise move cursor
+  115 -> ifControlPrepped $ moveBlockLeft p    -- Ctrl+Left if prepped
+  116 -> ifControlPrepped $ moveBlockRight p   -- Ctrl+Right if prepped
   14  -> HistoryForward               -- Ctrl p
   16  -> HistoryBack                  -- Ctrl n
   72  -> if getControlPrepped state then HistoryBack else Text (push c p)
@@ -47,3 +49,4 @@ matchChar state currentDir c = case ord c of
           if getControlPrepped state then r else push c p
         ifControlPrepped' r = 
           if getControlPrepped state then r else Text $ push c p
+

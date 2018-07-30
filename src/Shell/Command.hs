@@ -3,6 +3,8 @@ module Shell.Command
     ( processChar
     , CommandProcessResult (..)
     , CommandInput         (..)
+    , moveBlockLeft
+    , moveBlockRight
     ) where
 
 import Complete.String
@@ -208,6 +210,7 @@ forwardHistory = do
     put state { getHistoryLogs = history'', getPrompt = prompt }
 
 
+
 -- Functions for treating zipper as two stacks
 
 pushTopZipper :: a -> Zipper a -> Zipper a
@@ -231,3 +234,34 @@ safeHead (x:xs) = Just x
 safeTail :: [a] -> Maybe [a]
 safeTail []     = Nothing
 safeTail (x:xs) = Just xs
+
+-- Functions for traversing prompt
+
+moveBlockLeft :: Zipper Char -> Zipper Char
+moveBlockLeft z@(Zip back forwards) = ret
+  where
+    (xs, ys, ms) = splitReturnFirstNonTrivial back " /\\"
+    ret = Zip ys (maybeToList ms ++ reverse xs ++ forwards)
+
+moveBlockRight :: Zipper Char -> Zipper Char
+moveBlockRight z@(Zip back forwards) = ret
+  where
+    (xs, ys, ms) = splitReturnFirstNonTrivial forwards " /\\"
+    ret = Zip (maybeToList ms ++ reverse xs ++ back) ys
+
+
+splitReturnFirstNonTrivial :: Eq a => [a] -> [a] -> ([a], [a], Maybe a)
+splitReturnFirstNonTrivial [] splits = ([], [], Nothing)
+splitReturnFirstNonTrivial (x:xs) splits = 
+  let (ys, ys', s) = splitReturnFirst xs splits
+  in (x:ys, ys', s)
+
+splitReturnFirst :: Eq a => [a] -> [a] -> ([a], [a], Maybe a)
+splitReturnFirst [] splits = ([], [], Nothing)
+splitReturnFirst (x:xs) splits = 
+  if x `elem` splits
+    then ([], xs, Just x)
+    else let (ys, ys', s) = splitReturnFirst xs splits in
+         (x:ys, ys', s)
+
+
