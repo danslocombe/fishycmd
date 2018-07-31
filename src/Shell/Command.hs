@@ -114,11 +114,12 @@ processChar aliases handlerResult ci = do
       let trim :: String -> String
           trim = f . f
             where f = reverse . dropWhile isSpace
-          toExec = aliasComplete aliases $ trim s
+          trimmed = trim s
+          toExec = aliasComplete aliases $ trimmed
       exitQuestionMark <- execCommand toExec
       state' <- get
       put $ state' {getPrompt = empty}
-      lift $ return $ CommandProcessResult [toExec] initialLocation True exitQuestionMark
+      lift $ return $ CommandProcessResult [trimmed] initialLocation True exitQuestionMark
 
     -- Should we cycle full completions?
     Complete -> do
