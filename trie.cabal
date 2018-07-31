@@ -42,20 +42,17 @@ executable trie
                      , Complete.String
                      , Complete.Trie
                      , Complete.Types
-                     , Shell.State
-                     -- , Shell.Draw
-                     -- , Shell.Update
-                     -- , Shell.Command
-                     , Shell.KeyPress
-                     -- , Shell.CompleteHandler
-                     , Shell.Types
-                     , Shell.Helpers
-                     , Shell.Loop
-                     , Shell.ShellMode
-                     , Shell.ShellMode.Draw
-                     , Shell.ShellMode.CompletionHandler
-                     , Shell.ShellMode.Effect
-                     , Shell.ShellMode.Prompt
+                     , CLI.State
+                     , CLI.KeyPress
+                     , CLI.Types
+                     , CLI.Helpers
+                     , CLI.Loop
+                     , CLI.ShellMode
+                     , CLI.ShellMode.Draw
+                     , CLI.ShellMode.CompletionHandler
+                     , CLI.ShellMode.Effect
+                     , CLI.ShellMode.Prompt
+                     , CLI.ShellMode.FishyCommand
                      , Corext.AliasCompleter
                      , Test.Trie
   extra-lib-dirs:      lib

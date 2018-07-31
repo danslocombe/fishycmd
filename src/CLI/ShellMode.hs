@@ -57,7 +57,7 @@ smUpdate command = do
       ch' <- liftIO $ updateCompletionHandler 
         (getCompletionHandler s)
         (getPrompt s)
-        (getCurrentDir s)
+        (getCommandLocation commandResult)
         (getNewCommands commandResult)
       -- Return old handler
       put $ s {getCompletionHandler = ch'}
