@@ -59,13 +59,13 @@ drawState' result = do
   put $ state {lastPromptHeight = lph}
 
 -- Wrap updating completion handler with updates to state
-updateCompletionHandler' :: [String] -> StateT FishyState IO ()
-updateCompletionHandler' newCommands = do
+updateCompletionHandler' :: [String] -> String -> StateT FishyState IO ()
+updateCompletionHandler' newCommands location = do
   state <- get
   ch <- lift $ updateCompletionHandler 
     (getCompletionHandler state) 
     (getPrompt state)
-    <$> getCurrentDirectory
+    <$> return location
     <*> return newCommands
     
   state' <- lift $ fmap (\x -> state {getCompletionHandler = x}) ch
@@ -102,7 +102,7 @@ saveState' = do
 
 -- Main loop
 updateIOState :: CommandProcessResult -> StateT FishyState IO CommandProcessResult
-updateIOState (CommandProcessResult commands doUpdate _) = do
+updateIOState (CommandProcessResult commands location doUpdate _) = do
   -- Add commands to history
   addToHistory commands
 
@@ -113,7 +113,7 @@ updateIOState (CommandProcessResult commands doUpdate _) = do
   completion <- if doUpdate
     then do 
       -- feed handlers new commands
-      updateCompletionHandler' commands
+      updateCompletionHandler' commands location
       cs <- getCurrentCompletion'
       state <- get
       -- write to cache

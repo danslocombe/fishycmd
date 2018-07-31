@@ -79,7 +79,8 @@ main = do
   -- No new commands
   -- Rebuild completers
   -- Don't exit
-  let cpr = CommandProcessResult [] True False
+  cd <- getCurrentDirectory
+  let cpr = CommandProcessResult [] cd True False
 
   -- Enter main loop
   fishyLoop cpr state

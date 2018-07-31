@@ -74,6 +74,7 @@ execCommand c = case splitOn " " c of
 
 data CommandProcessResult = CommandProcessResult 
   { getNewCommands     :: [String]
+  , commandLocation      :: String
   , getRebuildCompleters :: Bool 
   , getExit              :: Bool
   } deriving Show
@@ -82,10 +83,11 @@ processChar :: [Alias] -> CompletionHandlerResult -> CommandInput -> StateT Fish
 processChar aliases handlerResult ci = do
   -- Scrape info from state
   state <- get
+  initialLocation <- lift $ getCurrentDirectory
   let s = toList $ getPrompt state
       (Zip promptL promptR) = getPrompt state
       historyLogs = getHistoryLogs state
-      defaultReturn = return $ CommandProcessResult [] True False
+      defaultReturn = return $ CommandProcessResult [] initialLocation True False
       (Completion completion _, _) = firstCompletionResult handlerResult
 
   case ci of 
@@ -101,10 +103,10 @@ processChar aliases handlerResult ci = do
 
     Cls -> do
       execCommand "cls"
-      return $ CommandProcessResult [] False False
+      return $ CommandProcessResult [] initialLocation False False
 
     -- Exit the shell
-    Exit -> return $ CommandProcessResult [] False True
+    Exit -> return $ CommandProcessResult [] initialLocation False True
 
     -- Run what is entered by user
     Run -> do
@@ -116,7 +118,7 @@ processChar aliases handlerResult ci = do
       exitQuestionMark <- execCommand toExec
       state' <- get
       put $ state' {getPrompt = empty}
-      lift $ return $ CommandProcessResult [toExec] True exitQuestionMark
+      lift $ return $ CommandProcessResult [toExec] initialLocation True exitQuestionMark
 
     -- Should we cycle full completions?
     Complete -> do
@@ -154,7 +156,7 @@ processChar aliases handlerResult ci = do
                 , getControlPrepped = False }
       lift $ setCursorColumn 0
       lift clearFromCursorToLineEnd
-      lift $ return $ CommandProcessResult [] False False
+      lift $ return $ CommandProcessResult [] initialLocation False False
 
     -- Execute some other command
     Execute command -> do
