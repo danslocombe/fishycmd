@@ -1,0 +1,15 @@
+
+
+
+
+Main
+  -> Options
+  -> Load State / Create State
+  -> Start Loop
+
+
+Update
+  -> Loop
+       Fetch Keystroke
+       Update completers
+       Generate completion

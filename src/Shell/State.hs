@@ -49,6 +49,7 @@ cleanState debug verbose global local = do
   FishyState
     <$> return handler
     <*> return (CompletionHandlerResult [] Red)
+    <*> return ""
     <*> return empty 
     <*> return 0 
     <*> return False 

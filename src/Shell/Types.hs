@@ -43,6 +43,7 @@ instance Serialize SerializableState
 data FishyState = FishyState 
   { getCompletionHandler     :: CompletionHandler
   , getCachedCompletions     :: CompletionHandlerResult
+  , currentCompletion     :: String
   , getPrompt                :: Zipper Char
   , lastPromptHeight         :: Int -- TODO remote
   , getControlPrepped        :: Bool

@@ -74,7 +74,7 @@ execCommand c = case splitOn " " c of
 
 data CommandProcessResult = CommandProcessResult 
   { getNewCommands     :: [String]
-  , commandLocation      :: String
+  , getCommandLocation      :: String
   , getRebuildCompleters :: Bool 
   , getExit              :: Bool
   } deriving Show
