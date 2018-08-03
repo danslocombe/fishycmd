@@ -19,7 +19,9 @@ import GHC.Generics
 import Data.Serialize
 import Data.List.Zipper
 import System.Console.ANSI
-import qualified Data.Map.Lazy as Map
+import qualified Data.Map.Strict as Map
+
+import Search
 
 data CompletionHandler = CompletionHandler --CompletionHandler [FishyCompleterResult] Int
   { getHistoryTries          :: [StringTrie]
@@ -36,9 +38,12 @@ data CompletionHandlerResult =
 data SerializableState = SerializableState
   { serializedHistoryTries   :: [StringTrie]
   , serializedLocalizedTries :: Map.Map FilePath [StringTrie]
+  , serializedHistoryLogs    :: [String]
   } deriving (Generic, Show)
 
 instance Serialize SerializableState 
+
+data FishyMode = FishyShell | FishySearch
 
 data FishyState = FishyState 
   { getCompletionHandler     :: CompletionHandler
@@ -51,7 +56,9 @@ data FishyState = FishyState
   , getDebug                 :: Bool
   , getVerbose               :: Bool
   , getHistoryLogs           :: Zipper String
+  , getHistoryIndex          :: HistoryIndex
   , getAliases               :: [Alias]
+  , getMode                  :: FishyMode
   } deriving (Show)
 
 data Alias = Alias String [AliasElem] 

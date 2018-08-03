@@ -10,6 +10,7 @@ import Shell.Command
 import Shell.KeyPress
 import Shell.CompleteHandler
 import Shell.Helpers
+import Search
 
 import Data.Char (ord)
 import Data.Maybe
@@ -93,7 +94,12 @@ addToHistory :: [String] -> StateT FishyState IO ()
 addToHistory cs = do
   state <- get
   let (Zip historyL historyR) = getHistoryLogs state
-  put state {getHistoryLogs = Zip (cs ++ historyL) historyR}
+      hi = getHistoryIndex state
+  put state 
+    { getHistoryLogs = Zip (cs ++ historyL) historyR
+    , getHistoryIndex = foldl hiNewCommand hi cs
+    }
+
 
 saveState' :: StateT FishyState IO ()
 saveState' = do

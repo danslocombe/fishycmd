@@ -14,6 +14,7 @@ import Shell.State
 import Shell.CompleteHandler
 import Shell.Types
 import Shell.FishyCommand
+import Search
 
 import System.Signal
 import Data.Maybe
@@ -41,6 +42,7 @@ data CommandInput = Text (Zipper Char)
                   | PrepControlChar
                   | HistoryBack
                   | HistoryForward
+                  | Search
 
 killHandler :: ProcessHandle -> Handler
 killHandler phandle _ = interruptProcessGroupOf phandle
@@ -182,6 +184,10 @@ processChar aliases handlerResult ci = do
       forwardHistory
       state' <- get
       ifDebug $ putStrLn ("\nForwards History: " ++ show (getHistoryLogs state'))
+      defaultReturn
+
+    Search -> do
+      lift $ putStrLn $ show $ hiLookupCommand (getHistoryIndex state) s
       defaultReturn
 
 -- TODO factor out some of following common in both functions

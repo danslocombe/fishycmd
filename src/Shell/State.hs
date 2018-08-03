@@ -32,6 +32,8 @@ import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Lazy as Map
 import qualified Data.ByteString as BS
 import Data.Maybe (maybeToList)
+
+import Search
   
 -- Initialize a new 'clean' fishy state
 cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
@@ -57,6 +59,7 @@ cleanState debug verbose global local = do
     <*> return debug
     <*> return verbose
     <*> return empty
+    <*> return hiNew
     <*> return aliases'
 
 genPathyTries :: Bool -> IO [StringTrie]
@@ -112,8 +115,10 @@ serializableFromFishy :: FishyState -> SerializableState
 serializableFromFishy fs =
   let ch = getCompletionHandler fs
   in SerializableState 
-    (getHistoryTries ch) 
-    (getLocalizedHistoryTries ch)
+    { serializedHistoryTries = getHistoryTries ch
+    , serializedLocalizedTries = getLocalizedHistoryTries ch
+    , serializedHistoryLogs = toList $ getHistoryLogs fs
+    }
 
 -- Save state by serializing history tries
 saveState :: FishyState -> IO ()
@@ -144,7 +149,7 @@ loadState debug verbose = do
   d <- BS.readFile $ readPath
   let d' = decode d
   case d' of
-    (Right (SerializableState h l)) -> do
+    (Right (SerializableState h l _)) -> do
       verbose ?-> putStrLn "Success!"
       cleanState debug verbose h l
     (Left err) -> do
