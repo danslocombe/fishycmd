@@ -24,7 +24,7 @@ prePrompt = do
         Nothing -> ">°))))<  "
   return $ pre ++ ">>> "
 
-promptTargetLength = 25
+promptTargetLength = 35
 
 processPromptSafe :: String -> Maybe String
 processPromptSafe p = do
