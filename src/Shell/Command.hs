@@ -32,18 +32,6 @@ import qualified Data.Map.Lazy as Map
 
 import Corext.AliasCompleter
 
-data CommandInput = Text (Zipper Char)
-                  | Cls
-                  | Complete
-                  | PartialComplete
-                  | Run
-                  | Exit
-                  | Execute String
-                  | PrepControlChar
-                  | HistoryBack
-                  | HistoryForward
-                  | Search
-
 killHandler :: ProcessHandle -> Handler
 killHandler phandle _ = interruptProcessGroupOf phandle
 
@@ -74,15 +62,18 @@ execCommand c = case splitOn " " c of
   -- Blank input
   _ -> lift $ return False
 
-data CommandProcessResult = CommandProcessResult 
-  { getNewCommands     :: [String]
-  , commandLocation      :: String
-  , getRebuildCompleters :: Bool 
-  , getExit              :: Bool
-  } deriving Show
-
 processChar :: [Alias] -> CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
-processChar aliases handlerResult ci = do
+processChar aliases chr ci = do
+  state <- get
+  case getMode state of
+    FishyShell -> processCharShell aliases chr ci
+    FishySearch -> processCharSearch ci
+
+processCharSearch :: CommandInput -> StateT FishyState IO CommandProcessResult
+processCharSearch = undefined
+
+processCharShell :: [Alias] -> CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
+processCharShell aliases handlerResult ci = do
   -- Scrape info from state
   state <- get
   initialLocation <- lift $ getCurrentDirectory
@@ -189,6 +180,8 @@ processChar aliases handlerResult ci = do
     Search -> do
       lift $ putStrLn $ show $ hiLookupCommand (getHistoryIndex state) s
       defaultReturn
+
+    NoOp -> defaultReturn
 
 -- TODO factor out some of following common in both functions
 backHistory :: StateT FishyState IO ()

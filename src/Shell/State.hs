@@ -61,6 +61,7 @@ cleanState debug verbose global local = do
     <*> return empty
     <*> return hiNew
     <*> return aliases'
+    <*> return FishyShell
 
 genPathyTries :: Bool -> IO [StringTrie]
 genPathyTries debug = do

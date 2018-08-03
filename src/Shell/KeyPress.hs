@@ -50,4 +50,3 @@ matchChar state currentDir c = case ord c of
           if getControlPrepped state then r else push c p
         ifControlPrepped' r = 
           if getControlPrepped state then r else Text $ push c p
-

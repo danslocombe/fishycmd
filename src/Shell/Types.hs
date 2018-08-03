@@ -8,6 +8,9 @@ module Shell.Types
   , FishyState              (..)
   , Alias                   (..)
   , AliasElem               (..)
+  , FishyMode               (..)
+  , CommandInput            (..)
+  , CommandProcessResult    (..)
   ) where
 
 
@@ -44,6 +47,7 @@ data SerializableState = SerializableState
 instance Serialize SerializableState 
 
 data FishyMode = FishyShell | FishySearch
+  deriving Show
 
 data FishyState = FishyState 
   { getCompletionHandler     :: CompletionHandler
@@ -68,3 +72,23 @@ data AliasElem = AliasStr String
                | AliasArgWildCard
                | AliasArg Int
   deriving (Show, Eq)
+
+data CommandInput = Text (Zipper Char)
+                  | Cls
+                  | Complete
+                  | PartialComplete
+                  | Run
+                  | Exit
+                  | Execute String
+                  | PrepControlChar
+                  | HistoryBack
+                  | HistoryForward
+                  | Search
+                  | NoOp
+
+data CommandProcessResult = CommandProcessResult 
+  { getNewCommands       :: [String]
+  , commandLocation      :: String
+  , getRebuildCompleters :: Bool 
+  , getExit              :: Bool
+  } deriving Show
