@@ -45,7 +45,7 @@ parseAliases2 filename = inCorext >>= \incorext -> if incorext then do
     aliasesRaw <- readFile =<< aliasPath
     case parse parseAllAliasDefs filename aliasesRaw of
       Right x -> return $ Just x
-      _ -> return Nothing
+      Left e -> error $ show e
   else return Nothing
 
 parseAliasArgWildCard :: Stream s m Char => ParsecT s u m AliasElem
@@ -76,7 +76,7 @@ parseAliasDef = do
   return $ Alias alias a2
 
 parseAllAliasDefs :: Stream s m Char => ParsecT s u m [Alias]
-parseAllAliasDefs = many $ do {x <- parseAliasDef; newline; return x} 
+parseAllAliasDefs = many $ do {x <- parseAliasDef; optional $ try $ newline; return x} 
 
 applyAlias :: Alias -> String -> Maybe String
 applyAlias (Alias alias rewrite) c = do

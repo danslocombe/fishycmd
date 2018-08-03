@@ -38,7 +38,7 @@ import Search
 -- Initialize a new 'clean' fishy state
 cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
 cleanState debug verbose global local = do
-  aliases <- parseAliases2 "AJOIWF"
+  aliases <- parseAliases2 "aliases.pub"
   let aliases' = case aliases of  {
       Just x -> x;
       Nothing -> [];

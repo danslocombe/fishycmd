@@ -51,6 +51,11 @@ updateCompletionHandler old prompt dir newCommands = do
     localTrie' = addToTrie localTrie
     local = Map.insert dir localTrie' localTries
 
+inQuotes :: String -> Bool
+-- We say that the user is currently typing something in quotes if there is an odd number of 
+-- " chars
+inQuotes s = (length (filter (=='"') s) `mod` 2) /= 0
+
 getCurrentCompletion :: CompletionHandler -> String -> String -> CompletionHandlerResult
 getCurrentCompletion handler prefix currentDir = case length splitS of
   -- Don't do anything for empty string
@@ -62,8 +67,10 @@ getCurrentCompletion handler prefix currentDir = case length splitS of
              = getCurrentCompletionInner handler prefix currentDir historyCompleters
            (CompletionHandlerResult fs _ )
              = getCurrentCompletionInner handler endPrefix currentDir fileCompleters
-           fs' = fmap (\(Completion c s) -> Completion (prefix++(drop n c)) s)  fs
-        in CompletionHandlerResult (hs ++ fs') Red
+           -- Don't complete on files if in quotes
+           fs' = if inQuotes prefix then [] else fs
+           fs'' = fmap (\(Completion c s) -> Completion (prefix++(drop n c)) s) fs'
+        in CompletionHandlerResult (hs ++ fs'') Red
 
   where
     allCompleters = 
