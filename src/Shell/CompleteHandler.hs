@@ -23,10 +23,29 @@ import Data.List.Zipper hiding (insert)
 import Data.List.Split
 import qualified Data.Map.Lazy as Map
 import System.Console.ANSI
+import System.Directory
 
 
 firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
 firstCompletionResult (CompletionHandlerResult xs c) = (fromMaybe (Completion [] 0) $ listToMaybe xs, Red)
+
+-- Test if a command refers to any local files
+-- if it does we don't want to add it to the global entry
+isGlobalCommand :: String -> IO Bool
+isGlobalCommand s = do
+  let splitS = splitOn " " s
+  localFilenames <- mapM 
+    (\f ->
+      if length f > 3 && f !! 1 == ':' && (f !! 2 == '\\' || f !! 2 == '/')
+        then return False -- We assume this is C:\apwfjap\ so not a local file
+        else do
+          isFile <- doesFileExist f
+          isDir <- doesDirectoryExist (f ++ "\\")
+          return $ isFile || isDir
+     ) splitS
+  return $ not $ any id $ localFilenames
+
+
 
 updateCompletionHandler :: CompletionHandler ->
                            Zipper Char ->
@@ -36,20 +55,24 @@ updateCompletionHandler :: CompletionHandler ->
 
 updateCompletionHandler old prompt dir newCommands = do
   fileCompleter <- createFileCompleter (getFileCompleter old) (toList prompt)
+  globalNewCommands <- filterM isGlobalCommand $ newCommands
+  let addToTrie :: [String] -> [StringTrie] -> [StringTrie]
+      addToTrie commands trie = foldl (flip insertTrie) trie commands
+
+      global = addToTrie globalNewCommands $ getHistoryTries old
+
+      localTriesOld = getLocalizedHistoryTries old
+      localTrie = Map.findWithDefault [] dir localTriesOld
+      localTrie' = addToTrie newCommands localTrie
+      localTriesNew = Map.insert dir localTrie' localTriesOld
+
   return old 
     { getFileCompleter         = fileCompleter
     , getHistoryTries          = global 
-    , getLocalizedHistoryTries = local
+    , getLocalizedHistoryTries = localTriesNew
     -- We leave path completions alone for now
   }
-  where
-    addToTrie :: [StringTrie] -> [StringTrie]
-    addToTrie trie = foldl (flip insertTrie) trie newCommands
-    global = addToTrie $ getHistoryTries old
-    localTries = getLocalizedHistoryTries old
-    localTrie = Map.findWithDefault [] dir localTries
-    localTrie' = addToTrie localTrie
-    local = Map.insert dir localTrie' localTries
+
 
 inQuotes :: String -> Bool
 -- We say that the user is currently typing something in quotes if there is an odd number of 
