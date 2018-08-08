@@ -21,63 +21,6 @@ import System.Console.Terminal.Size
 import System.Console.ANSI
 import System.Directory
 
--- import Control.Monad.IO.Class
--- import Control.Monad.RWS.Class
-
--- loop :: (MonadState m, MonadIO m) => m IO StateT FishyState IO Bool
--- loop = do
---   state <- get
---   c <- lift $ getHiddenChar
--- 
---   let c = getCurrentCompletion state
---   cpr <- processChar' completion c
---   drawState' completion
--- 
---   getRebuildCompleters cpr ?-> do
---     updateCompletionHandler' (getNewCommands cpr) (getCommandLocation location)
--- 
-
--- Main loop
-updateIOState :: CommandProcessResult -> StateT FishyState IO CommandProcessResult
-updateIOState (CommandProcessResult commands location doUpdate _) = do
-  -- Add commands to history
-  addToHistory commands
-
-  -- Check if we should update the completion handlers
-  -- if we should then update and write to cache, otherwise
-  -- read from cache
-  -- return current completion
-  completion <- if doUpdate
-    then do 
-      -- feed handlers new commands
-      updateCompletionHandler' commands location
-      cs <- getCurrentCompletion'
-      state <- get
-      -- write to cache
-      let state' = state {getCachedCompletions = cs}
-      put state'
-      lift $ return cs
-    else do
-      state <- get
-      lift $ return $ getCachedCompletions state
-
-  -- If we have performed some non-trivial action
-  -- save the state
-  length commands > 0
-    ?-> saveState'
-
-  -- log the completions
-  ss <- get
-  getDebug ss ?-> do
-    cd <- lift $ getCurrentDirectory
-    lift $ logCompletions (toList $ getPrompt ss) cd completion
-
-  -- Draw completion then yield for next char
-  drawState' completion
-  c <- lift getHiddenChar
-  -- lift . putStrLn . show $ ord c
-  processChar' completion c
-
 -- Draw prompt and completion
 -- Has some clumsy logic to deal with line heights
 -- TODO fix
@@ -156,3 +99,44 @@ saveState' :: StateT FishyState IO ()
 saveState' = do
   state <- get
   lift $ saveState state
+
+-- Main loop
+updateIOState :: CommandProcessResult -> StateT FishyState IO CommandProcessResult
+updateIOState (CommandProcessResult commands location doUpdate _) = do
+  -- Add commands to history
+  addToHistory commands
+
+  -- Check if we should update the completion handlers
+  -- if we should then update and write to cache, otherwise
+  -- read from cache
+  -- return current completion
+  completion <- if doUpdate
+    then do 
+      -- feed handlers new commands
+      updateCompletionHandler' commands location
+      cs <- getCurrentCompletion'
+      state <- get
+      -- write to cache
+      let state' = state {getCachedCompletions = cs}
+      put state'
+      lift $ return cs
+    else do
+      state <- get
+      lift $ return $ getCachedCompletions state
+
+  -- If we have performed some non-trivial action
+  -- save the state
+  length commands > 0
+    ?-> saveState'
+
+  -- log the completions
+  ss <- get
+  getDebug ss ?-> do
+    cd <- lift $ getCurrentDirectory
+    lift $ logCompletions (toList $ getPrompt ss) cd completion
+
+  -- Draw completion then yield for next char
+  drawState' completion
+  c <- lift getHiddenChar
+  -- lift . putStrLn . show $ ord c
+  processChar' completion c

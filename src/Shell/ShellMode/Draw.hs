@@ -1,4 +1,4 @@
-module Shell.Draw (prePrompt, drawCompletion) where
+module Shell.ShellMode.Draw (prePrompt, drawCompletion) where
 
 import Complete
 import Complete.String
@@ -94,8 +94,8 @@ processPrompt p = ret ++ "\\" ++ cd
 drawCompletion' :: Int -> [(String, Color)] -> IO ()
 drawCompletion' = undefined
 
-drawCompletion :: Int -> String -> Zipper Char -> StringCompletion -> Color -> IO ()
-drawCompletion lastHeight preprompt p@(Zip pl pr) (Completion completion _) color = do
+drawCompletion :: Int -> String -> Zipper Char -> String -> Color -> IO ()
+drawCompletion lastHeight preprompt p@(Zip pl pr) completion color = do
   let s :: String
       s = toList p
   Just (Window _ ww) <- size

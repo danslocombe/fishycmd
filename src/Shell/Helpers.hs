@@ -1,11 +1,13 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
 module Shell.Helpers where
 
 import Shell.Types
 import Complete.Types
 
 import Control.Monad
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.State.Strict
+import Control.Monad.IO.Class
+import Control.Monad.RWS.Class
 
 import System.Environment
 
@@ -30,8 +32,8 @@ infix 0 ?->
 (?->) = flip (<-?)
 
 -- Run some arbitrary IO if we are running in debug mode
-ifDebug :: IO () -> StateT FishyState IO ()
-ifDebug f = lift f <~? getDebug <$> get
+ifDebug :: IO () -> FishyMonad ()
+ifDebug f = do (liftIO f) <~? getDebug <$> get
 
 storePath :: IO FilePath
 storePath = do

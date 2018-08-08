@@ -1,14 +1,4 @@
-module Shell.CompleteHandler
-  ( CompletionHandler
-  , CompletionHandlerResult (..)
-  , getCurrentCompletion
-  , updateCompletionHandler
-  , cycleCompletionHandler
-  , revCycleCompletionHandler
-  , resetCompletionHandler
-  , firstCompletionResult
-  , (!%!)
-  ) where
+module Shell.ShellMode.CompletionHandler where
 
 import Complete
 import Complete.FileCompleter

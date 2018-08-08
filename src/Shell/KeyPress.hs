@@ -18,8 +18,8 @@ foreign import ccall unsafe "conio.h getch"
   c_getch :: IO CInt
 
 -- Hardcoded windows inputs
-matchChar :: FishyState -> String -> Char -> CommandInput
-matchChar state currentDir c = case ord c of
+matchChar :: FishyState -> Char -> CommandInput
+matchChar state c = case ord c of
   10  -> Run                          -- Newline
   13  -> Run                          -- Newline (Windows)
   8   -> Text $ Zip (drop 1 s) s'     -- Backspace (Windows)

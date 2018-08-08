@@ -6,8 +6,10 @@ import Shell.State
   , loadState
   , storePath
   )
-import Shell.Update ( updateIOState )
-import Shell.Command ( CommandProcessResult (..) )
+--import Shell.Update ( updateIOState )
+--import Shell.Command ( CommandProcessResult (..) )
+import Shell.Loop
+import Shell.ShellMode
 import Shell.Helpers ((?->))
 import Test.Trie
   
@@ -79,20 +81,22 @@ main = do
   -- No new commands
   -- Rebuild completers
   -- Don't exit
-  cd <- getCurrentDirectory
-  let cpr = CommandProcessResult [] cd True False
+  -- cd <- getCurrentDirectory
+  -- let cpr = CommandProcessResult [] cd True False
+  runStateT (loop shellMode) state
+  return ()
 
   -- Enter main loop
-  fishyLoop cpr state
+  --fishyLoop cpr state
 
-fishyLoop :: CommandProcessResult -> FishyState -> IO ()
-fishyLoop cpr state = do
+--fishyLoop :: CommandProcessResult -> FishyState -> IO ()
+--fishyLoop cpr state = do
 
-  (res, state')
-    <- runStateT (updateIOState cpr) state
-
-  not (getExit res)
-    ?-> fishyLoop res state'
+  --(res, state')
+    -- <- runStateT (updateIOState cpr) state
+--
+  --not (getExit res)
+    -- ?-> fishyLoop res state'
 
 entryString :: String
 entryString = "Fishy v0.4     >°))))<"

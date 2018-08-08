@@ -1,14 +1,9 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE RankNTypes #-}
 
-module Shell.Types 
-  ( CompletionHandler       (..)
-  , CompletionHandlerResult (..)
-  , SerializableState       (..)
-  , FishyState              (..)
-  , Alias                   (..)
-  , AliasElem               (..)
-  ) where
+module Shell.Types where
 
 
 import Complete.String
@@ -20,6 +15,16 @@ import Data.Serialize
 import Data.List.Zipper
 import System.Console.ANSI
 import qualified Data.Map.Lazy as Map
+import Control.Monad.IO.Class
+import Control.Monad.RWS.Class
+
+type FishyMonad a = forall m. (MonadState FishyState m, MonadIO m) => m a
+
+data Mode = Mode
+  { update :: CommandInput -> FishyMonad (Maybe Mode)
+  -- , draw :: FishyState -> IO ()
+  , draw :: FishyMonad ()
+  }
 
 data CompletionHandler = CompletionHandler --CompletionHandler [FishyCompleterResult] Int
   { getHistoryTries          :: [StringTrie]
@@ -62,3 +67,21 @@ data AliasElem = AliasStr String
                | AliasArgWildCard
                | AliasArg Int
   deriving (Show, Eq)
+
+data CommandInput = Text (Zipper Char)
+                  | Cls
+                  | Complete
+                  | PartialComplete
+                  | Run
+                  | Exit
+                  | Execute String
+                  | PrepControlChar
+                  | HistoryBack
+                  | HistoryForward
+
+data CommandProcessResult = CommandProcessResult 
+  { getNewCommands       :: [String]
+  , getCommandLocation   :: FilePath
+  , getRebuildCompleters :: Bool 
+  , getExit              :: Bool
+  } deriving Show

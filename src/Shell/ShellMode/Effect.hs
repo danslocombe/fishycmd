@@ -1,30 +1,25 @@
-module Shell.Command 
-    --( processKeyPress 
-    ( processChar
-    , CommandProcessResult (..)
-    , CommandInput         (..)
-    , moveBlockLeft
-    , removeBlockLeft
-    , moveBlockRight
-    ) where
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
+module Shell.ShellMode.Effect where
 
 import Complete.String
 import Complete
 import Shell.State
-import Shell.CompleteHandler
 import Shell.Types
-import Shell.FishyCommand
+import Shell.ShellMode.CompletionHandler
+import Shell.ShellMode.FishyCommand
+import Shell.ShellMode.Prompt
 
 import System.Signal
 import Data.Maybe
 import Data.List (nub, lookup)
 import Data.Char (isSpace)
-import Control.Monad.Trans.State.Strict
-import Control.Monad.Trans.Class
 import Data.List.Split
 import System.Process
 import System.Console.ANSI
 import System.Directory
+import Control.Monad.IO.Class
+import Control.Monad.RWS.Class
 import System.IO
 import Data.List.Zipper hiding (insert)
 import qualified Data.Map.Lazy as Map
@@ -34,38 +29,38 @@ import Corext.AliasCompleter
 killHandler :: ProcessHandle -> Handler
 killHandler phandle _ = interruptProcessGroupOf phandle
 
-execCommand :: String -> StateT FishyState IO Bool
-execCommand "" = lift $ putStr "\n" >> return False
+execCommand :: String -> FishyMonad Bool
+execCommand "" = liftIO $ putStr "\n" >> return False
 execCommand c = case splitOn " " c of 
   -- Extract first 'word'
   (x:xs) -> do
-    lift $ putStr "\n"
+    liftIO $ putStr "\n"
     -- Try and match against a fishy command, otherwise act normal
     let fishy = Prelude.lookup x fishyCommandMap
     ret <- case fishy of
       Just fishyCmd -> runFishy xs fishyCmd
       Nothing -> do 
         let x = (shell c) {create_group = True}
-        (_, _, _, phandle) <- lift $ createProcess x
-        lift $ installHandler sigINT 
+        (_, _, _, phandle) <- liftIO $ createProcess x
+        liftIO $ installHandler sigINT 
           (\sig -> do {
               -- putStrLn "KILLING SPAWNED PROCESS"; 
               killHandler phandle sig; hFlush stdout})
-        lift $ waitForProcess phandle
+        liftIO $ waitForProcess phandle
         s <- get
         put $ s {getPrompt = empty, getCachedCompletions = CompletionHandlerResult [] Red}
         s' <- get
-        lift $ return False
-    lift $ putStr "\n"
-    lift $ return ret
+        liftIO $ return False
+    liftIO $ putStr "\n"
+    liftIO $ return ret
   -- Blank input
-  _ -> lift $ return False
+  _ -> return False
 
-processChar :: [Alias] -> CompletionHandlerResult -> CommandInput -> StateT FishyState IO CommandProcessResult
-processChar aliases handlerResult ci = do
+processCommand :: [Alias] -> CompletionHandlerResult -> CommandInput -> FishyMonad CommandProcessResult
+processCommand aliases handlerResult ci = do
   -- Scrape info from state
   state <- get
-  initialLocation <- lift $ getCurrentDirectory
+  initialLocation <- liftIO $ getCurrentDirectory
   let s = toList $ getPrompt state
       (Zip promptL promptR) = getPrompt state
       historyLogs = getHistoryLogs state
@@ -75,8 +70,8 @@ processChar aliases handlerResult ci = do
   case ci of 
     -- Update using new prompt state
     Text prompt -> do
-      lift $ setCursorColumn 0
-      lift clearFromCursorToLineEnd
+      liftIO $ setCursorColumn 0
+      liftIO clearFromCursorToLineEnd
       put state 
         { getPrompt = prompt
         , getCompletionHandler = resetCompletionHandler (getCompletionHandler state)
@@ -92,7 +87,7 @@ processChar aliases handlerResult ci = do
 
     -- Run what is entered by user
     Run -> do
-      dirToInsert <- lift $ getCurrentDirectory
+      dirToInsert <- liftIO $ getCurrentDirectory
       let trim :: String -> String
           trim = f . f
             where f = reverse . dropWhile isSpace
@@ -101,12 +96,12 @@ processChar aliases handlerResult ci = do
       exitQuestionMark <- execCommand toExec
       state' <- get
       put $ state' {getPrompt = empty}
-      lift $ return $ CommandProcessResult [trimmed] initialLocation True exitQuestionMark
+      return $ CommandProcessResult [trimmed] initialLocation True exitQuestionMark
 
     -- Should we cycle full completions?
     Complete -> do
-      lift $ setCursorColumn 0
-      lift clearFromCursorToLineEnd
+      liftIO $ setCursorColumn 0
+      liftIO clearFromCursorToLineEnd
       put state 
         { getPrompt = Zip (reverse completion) []
         , getControlPrepped = False}
@@ -137,13 +132,13 @@ processChar aliases handlerResult ci = do
           -- Complete to partial
           state { getPrompt = Zip (reverse compNowSplit) promptR
                 , getControlPrepped = False }
-      lift $ setCursorColumn 0
-      lift clearFromCursorToLineEnd
-      lift $ return $ CommandProcessResult [] initialLocation False False
+      liftIO $ setCursorColumn 0
+      liftIO clearFromCursorToLineEnd
+      liftIO $ return $ CommandProcessResult [] initialLocation False False
 
     -- Execute some other command
     Execute command -> do
-      exitcode <- lift $ system command
+      exitcode <- liftIO $ system command
       defaultReturn
 
     -- Some inputs (up, down, etc) are represented by two characters
@@ -167,7 +162,7 @@ processChar aliases handlerResult ci = do
       defaultReturn
 
 -- TODO factor out some of following common in both functions
-backHistory :: StateT FishyState IO ()
+backHistory :: FishyMonad ()
 backHistory = do
     state <- get
     let s = toList $ getPrompt state
@@ -181,7 +176,7 @@ backHistory = do
         prompt = Zip (reverse text) []
     put state { getHistoryLogs = history'', getPrompt = prompt }
 
-forwardHistory :: StateT FishyState IO ()
+forwardHistory :: FishyMonad ()
 forwardHistory = do
     state <- get
     let s = toList $ getPrompt state
@@ -196,61 +191,3 @@ forwardHistory = do
     put state { getHistoryLogs = history'', getPrompt = prompt }
 
 
-
--- Functions for treating zipper as two stacks
-
-pushTopZipper :: a -> Zipper a -> Zipper a
-pushTopZipper y (Zip xs ys) = Zip xs (y : ys)
-
-pushBotZipper :: a -> Zipper a -> Zipper a
-pushBotZipper x (Zip xs ys) = Zip (x : xs) ys
-
-popTopZipper :: Zipper a -> (Zipper a, Maybe a)
-popTopZipper (Zip xs (y:ys)) = (Zip xs ys, Just y)
-popTopZipper (Zip xs []) = (Zip xs [], Nothing)
-
-popBotZipper :: Zipper a -> (Zipper a, Maybe a)
-popBotZipper (Zip (x:xs) ys) = (Zip xs ys, Just x)
-popBotZipper (Zip [] ys) = (Zip [] ys, Nothing)
-
-safeHead :: [a] -> Maybe a
-safeHead []     = Nothing
-safeHead (x:xs) = Just x
-
-safeTail :: [a] -> Maybe [a]
-safeTail []     = Nothing
-safeTail (x:xs) = Just xs
-
--- Functions for traversing prompt
-
-moveBlockLeft :: Zipper Char -> Zipper Char
-moveBlockLeft z@(Zip back forwards) = ret
-  where
-    (xs, ys, ms) = splitReturnFirstNonTrivial back " /\\"
-    ret = Zip ys (maybeToList ms ++ reverse xs ++ forwards)
-
-moveBlockRight :: Zipper Char -> Zipper Char
-moveBlockRight z@(Zip back forwards) = ret
-  where
-    (xs, ys, ms) = splitReturnFirstNonTrivial forwards " /\\"
-    ret = Zip (maybeToList ms ++ reverse xs ++ back) ys
-
-removeBlockLeft :: Zipper Char -> Zipper Char
-removeBlockLeft z@(Zip back forwards) = ret
-  where
-    (xs, ys, ms) = splitReturnFirstNonTrivial back " /\\"
-    ret = Zip ys forwards
-
-splitReturnFirstNonTrivial :: Eq a => [a] -> [a] -> ([a], [a], Maybe a)
-splitReturnFirstNonTrivial [] splits = ([], [], Nothing)
-splitReturnFirstNonTrivial (x:xs) splits = 
-  let (ys, ys', s) = splitReturnFirst xs splits
-  in (x:ys, ys', s)
-
-splitReturnFirst :: Eq a => [a] -> [a] -> ([a], [a], Maybe a)
-splitReturnFirst [] splits = ([], [], Nothing)
-splitReturnFirst (x:xs) splits = 
-  if x `elem` splits
-    then ([], xs, Just x)
-    else let (ys, ys', s) = splitReturnFirst xs splits in
-         (x:ys, ys', s)

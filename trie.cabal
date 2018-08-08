@@ -34,6 +34,7 @@ executable trie
                      , terminal-size >= 0.3.2.1
                      , signal >= 0.1.0.3
                      , parsec >= 3.1.11
+                     , mtl >= 2.2.1
                      -- , lens >= 4.15.1
                      , QuickCheck >= 2.9.2
   other-modules:       Complete
@@ -41,14 +42,20 @@ executable trie
                      , Complete.String
                      , Complete.Trie
                      , Complete.Types
-                     , Shell.Draw
                      , Shell.State
-                     , Shell.Update
-                     , Shell.Command
+                     -- , Shell.Draw
+                     -- , Shell.Update
+                     -- , Shell.Command
                      , Shell.KeyPress
-                     , Shell.CompleteHandler
+                     -- , Shell.CompleteHandler
                      , Shell.Types
                      , Shell.Helpers
+                     , Shell.Loop
+                     , Shell.ShellMode
+                     , Shell.ShellMode.Draw
+                     , Shell.ShellMode.CompletionHandler
+                     , Shell.ShellMode.Effect
+                     , Shell.ShellMode.Prompt
                      , Corext.AliasCompleter
                      , Test.Trie
   extra-lib-dirs:      lib

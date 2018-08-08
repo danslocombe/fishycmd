@@ -11,5 +11,82 @@ Main
 Update
   -> Loop
        Fetch Keystroke
-       Update completers
-       Generate completion
+      -> Mode
+        -> Update Mode
+        -> Draw Mode
+
+
+ShellMode
+  Update
+    -> Update completers
+  Draw
+    -> Generate completion
+
+
+
+-- -- -- -- --
+  Current
+-- -- -- -- --
+
+CompleteHandler
+  <- Query
+  -> Update
+
+Keypress
+  <- process keystroke
+
+
+Command
+  -> ExecCommand
+  -> processKeyPress
+
+  FishyCommand
+
+Draw
+  ->
+
+State
+  -> Load
+  -> Save
+
+Update
+
+Helpers
+
+-----------
+  Desired
+-----------
+
+Loop
+
+Keypress
+  Char -> Action
+
+ShellMode
+  Update :: FishyMonad Mode -- returns next mode
+    InternalAction
+      -> update
+         -> update complete handler
+         -> update search indexes
+      -> processkeypress
+         <- CompleteHandler
+
+    Effect
+      -> Execcommand
+      FishyCommand
+
+  Draw
+    ->
+
+SearchMode
+  InternalAction
+    <- search indexes
+
+  Draw
+    ->
+
+State
+  -> Load
+  -> Save
+
+Helpers
