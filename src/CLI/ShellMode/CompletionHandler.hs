@@ -27,7 +27,6 @@ updateCompletionHandler :: CompletionHandler ->
 updateCompletionHandler old prompt dir newCommands = do
   fileCompleter <- createFileCompleter (getFileCompleter old) (toList prompt)
   globalNewCommands <- filterM (isGlobalCommand dir) newCommands
-  mapM putStrLn globalNewCommands
   let addToTrie :: [String] -> [StringTrie] -> [StringTrie]
       addToTrie commands trie = foldl (flip insertTrie) trie commands
 
@@ -166,9 +165,9 @@ isGlobalCommand dir s = do
         then return False -- We assume this is C:\apwfjap\ so not a local file
         else do
           isFile <- doesFileExist $ dir ++ "\\" ++ f
-          putStrLn $ dir ++ "\\" ++ f ++ " " ++ show isFile
+          -- putStrLn $ dir ++ "\\" ++ f ++ " " ++ show isFile
           isDir <- doesDirectoryExist (dir ++ "\\" ++ f ++ "\\")
-          putStrLn $ dir ++ "\\" ++ f ++ " " ++ show isDir
+          -- putStrLn $ dir ++ "\\" ++ f ++ " " ++ show isDir
           return $ isFile || isDir
      ) splitS
   return $ not $ any id $ localFilenames

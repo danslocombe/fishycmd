@@ -6,6 +6,7 @@ import Complete.String
 import Complete
 import CLI.State
 import CLI.Types
+import CLI.Helpers
 import CLI.ShellMode.CompletionHandler
 import CLI.ShellMode.FishyCommand
 import CLI.ShellMode.Prompt
@@ -38,21 +39,37 @@ execCommand c = case splitOn " " c of
     -- Try and match against a fishy command, otherwise act normal
     let fishy = Prelude.lookup x fishyCommandMap
     ret <- case fishy of
+      -- Run fishycommand
       Just fishyCmd -> runFishy xs fishyCmd
       Nothing -> do 
+
+        -- Setup flags for process
         let x = (shell c) {create_group = True}
+
+        -- Spawn Process
         (_, _, _, phandle) <- liftIO $ createProcess x
-        liftIO $ installHandler sigINT 
-          (\sig -> do {
-              -- putStrLn "KILLING SPAWNED PROCESS"; 
-              killHandler phandle sig; hFlush stdout})
-        liftIO $ waitForProcess phandle
-        s <- get
-        put $ s {getPrompt = empty, getCachedCompletions = CompletionHandlerResult [] Red}
-        s' <- get
-        liftIO $ return False
+
+        -- Should we block for the result?
+        (liftIO $ blockForCommand c) ?~> do
+          --liftIO $ putStrLn "blocking"
+          -- Install an interrupt handler that kills the child process
+          liftIO $ installHandler sigINT 
+            (\sig -> do {
+                killHandler phandle sig; hFlush stdout})
+          liftIO $ waitForProcess phandle
+          --liftIO $ putStrLn "done"
+
+        -- Update state
+        modify (\s ->
+                 s { getPrompt = empty
+                   , getCachedCompletions = CompletionHandlerResult [] Red}
+               )
+
+        return False
+
     liftIO $ putStr "\n"
-    liftIO $ return ret
+    return ret
+
   -- Blank input
   _ -> return False
 
@@ -191,3 +208,16 @@ forwardHistory = do
     put state { getHistoryLogs = history'', getPrompt = prompt }
 
 
+-- This is incredibly hacky
+blockForCommand :: String -> IO Bool
+blockForCommand c = do
+  exists <- doesFileExist c
+  let hasAsyncExt = (maybe False (`elem` asyncExtensions) (extension c))
+  return $ not $ exists && hasAsyncExt
+
+asyncExtensions = ["csproj", "sln", "txt", "cs", "bond", "ini", "log"]
+
+extension :: String -> Maybe String
+extension s = case dropWhile (/= '.') s of
+  (_:ext) -> Just ext
+  _ -> Nothing
