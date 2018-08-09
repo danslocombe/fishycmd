@@ -9,6 +9,7 @@ module CLI.Types where
 import Complete.String
 import Complete.Types
 import Complete.FileCompleter
+import Search
 
 import GHC.Generics
 import Data.Serialize
@@ -17,6 +18,7 @@ import System.Console.ANSI
 import qualified Data.Map.Lazy as Map
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
+
 
 type FishyMonad a = forall m. (MonadState FishyState m, MonadIO m) => m a
 
@@ -41,6 +43,7 @@ data CompletionHandlerResult =
 data SerializableState = SerializableState
   { serializedHistoryTries   :: [StringTrie]
   , serializedLocalizedTries :: Map.Map FilePath [StringTrie]
+  , serializedHistoryLogs    :: [String]
   } deriving (Generic, Show)
 
 instance Serialize SerializableState 
@@ -48,7 +51,7 @@ instance Serialize SerializableState
 data FishyState = FishyState 
   { getCompletionHandler     :: CompletionHandler
   , getCachedCompletions     :: CompletionHandlerResult
-  , currentCompletion     :: String
+  , currentCompletion        :: String
   , getPrompt                :: Zipper Char
   , lastPromptHeight         :: Int -- TODO remote
   , getControlPrepped        :: Bool
@@ -57,6 +60,7 @@ data FishyState = FishyState
   , getDebug                 :: Bool
   , getVerbose               :: Bool
   , getHistoryLogs           :: Zipper String
+  , getHistoryIndex          :: HistoryIndex
   , getAliases               :: [Alias]
   } deriving (Show)
 
@@ -78,6 +82,7 @@ data CommandInput = Text (Zipper Char)
                   | PrepControlChar
                   | HistoryBack
                   | HistoryForward
+                  | Search
 
 data CommandProcessResult = CommandProcessResult 
   { getNewCommands       :: [String]

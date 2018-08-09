@@ -12,6 +12,7 @@ import Complete.FileCompleter
 import CLI.Types
 import CLI.Helpers
 import Corext.AliasCompleter
+import Search
 
 import Prelude
 
@@ -34,8 +35,13 @@ import qualified Data.ByteString as BS
 import Data.Maybe (maybeToList)
   
 -- Initialize a new 'clean' fishy state
-cleanState :: Bool -> Bool -> [StringTrie] -> Map.Map FilePath [StringTrie] -> IO FishyState
-cleanState debug verbose global local = do
+cleanState :: Bool 
+           -> Bool
+           -> [StringTrie]
+           -> Map.Map FilePath [StringTrie]
+           -> [String]
+           -> IO FishyState
+cleanState debug verbose global local logs = do
   aliases <- parseAliases2 "aliases.pub"
   let aliases' = case aliases of  {
       Just x -> x;
@@ -46,19 +52,23 @@ cleanState debug verbose global local = do
     <$> genPathyTries debug
     <*> createFileCompleter (FileCompleter "" []) ""
     <*> return 0)
-  FishyState
-    <$> return handler
-    <*> return (CompletionHandlerResult [] Red)
-    <*> return ""
-    <*> return empty 
-    <*> return 0 
-    <*> return False 
-    <*> return []
-    <*> getCurrentDirectory 
-    <*> return debug
-    <*> return verbose
-    <*> return empty
-    <*> return aliases'
+
+  cd <- getCurrentDirectory 
+  return $ FishyState
+    { getCompletionHandler     = handler
+    , getCachedCompletions     = (CompletionHandlerResult [] Red)
+    , currentCompletion        = ""
+    , getPrompt                = empty
+    , lastPromptHeight         = 0
+    , getControlPrepped        = False
+    , getBufferedCommands      = []
+    , getCurrentDir            = cd
+    , getDebug                 = debug
+    , getVerbose               = verbose
+    , getHistoryLogs           = [] -- (Zip (reverse logs) []) Do we want history from prev session?
+    , getHistoryIndex          = hiNew
+    , getAliases               = aliases'
+    }
 
 genPathyTries :: Bool -> IO [StringTrie]
 genPathyTries debug = do
@@ -113,8 +123,10 @@ serializableFromFishy :: FishyState -> SerializableState
 serializableFromFishy fs =
   let ch = getCompletionHandler fs
   in SerializableState 
-    (getHistoryTries ch) 
-    (getLocalizedHistoryTries ch)
+    { serializedHistoryTries = getHistoryTries ch
+    , serializedLocalizedTries = getLocalizedHistoryTries ch
+    , serializedHistoryLogs = toList $ getHistoryLogs fs
+    }
 
 -- Save state by serializing history tries
 saveState :: FishyState -> IO ()
@@ -145,9 +157,9 @@ loadState debug verbose = do
   d <- BS.readFile $ readPath
   let d' = decode d
   case d' of
-    (Right (SerializableState h l)) -> do
+    (Right (SerializableState h l logs)) -> do
       verbose ?-> putStrLn "Success!"
-      cleanState debug verbose h l
+      cleanState debug verbose h l logs
     (Left err) -> do
       verbose ?-> putStrLn "Failed! Creating blank state"
-      cleanState debug verbose [] Map.empty
+      cleanState debug verbose [] Map.empty []

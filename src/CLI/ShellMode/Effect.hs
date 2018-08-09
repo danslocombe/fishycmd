@@ -178,6 +178,9 @@ processCommand aliases handlerResult ci = do
       ifDebug $ putStrLn ("\nForwards History: " ++ show (getHistoryLogs state'))
       defaultReturn
 
+    Search -> error "ShellMode does not handle search"
+      
+
 -- TODO factor out some of following common in both functions
 backHistory :: FishyMonad ()
 backHistory = do
