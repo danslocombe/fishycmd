@@ -17,7 +17,12 @@ import Control.Monad.RWS
 import Control.Monad.RWS.Class
 
 loop :: Mode -> FishyMonad ()
-loop Mode{..} = do
+loop mode = do
+  draw mode
+  loop' mode
+
+loop' :: Mode -> FishyMonad ()
+loop' Mode{..} = do
 
   s <- get
   nextChar <- liftIO getHiddenChar

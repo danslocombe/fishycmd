@@ -4,7 +4,9 @@
 
 module Shell.ShellMode where
 
+import Shell.State
 import Shell.Types
+import Shell.Helpers
 import Shell.ShellMode.CompletionHandler
 import Shell.ShellMode.Effect
 import Shell.ShellMode.Draw
@@ -68,7 +70,20 @@ smUpdate command = do
   s <- get
   let completionResult = (getCurrentCompletion ch') (toList $ getPrompt s) (getCurrentDir s)
 
-  put $ s {getCachedCompletions = completionResult}
+  let s' = s {getCachedCompletions = completionResult}
+  put s'
+
+  -- If we have performed some non-trivial action
+  -- save the state
+  let newCommands = getNewCommands commandResult
+  addToHistory newCommands
+  length newCommands > 0
+    ?-> saveState'
+
+  -- log the completions
+  getDebug s' ?-> do
+    cd <- liftIO $ getCurrentDirectory
+    liftIO $ logCompletions (toList $ getPrompt s') cd completionResult
 
   return nextMode
 
@@ -76,8 +91,8 @@ smDraw :: FishyMonad ()
 smDraw = (getCachedCompletions <$> get) >>= drawState
   --drawCompletion lastPromptHeight pp getPrompt currentCompletion Red
 
-drawW :: Int -> (Zipper Char) -> StringCompletion -> Color -> IO Int
-drawW lastHeight prompt (Completion completion _) color = do
+drawShellMode :: Int -> (Zipper Char) -> StringCompletion -> Color -> IO Int
+drawShellMode lastHeight prompt (Completion completion _) color = do
   Just (Window _ ww) <- size
   preprompt <- prePrompt
   cd <- getCurrentDirectory
@@ -106,7 +121,7 @@ drawState result = do
         then Completion "" 0
         else completion
 
-  lph <- liftIO $ drawW lastHeight prompt completion' color
+  lph <- liftIO $ drawShellMode lastHeight prompt completion' color
   put $ state {lastPromptHeight = lph}
 
 saveState' :: FishyMonad ()
@@ -119,4 +134,3 @@ addToHistory cs = do
   state <- get
   let (Zip historyL historyR) = getHistoryLogs state
   put state {getHistoryLogs = Zip (cs ++ historyL) historyR}
-
