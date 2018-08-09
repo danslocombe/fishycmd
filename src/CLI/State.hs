@@ -1,4 +1,4 @@
-module Shell.State 
+module CLI.State 
     ( FishyState(..)
     , loadState
     , saveState
@@ -9,8 +9,8 @@ module Shell.State
 
 import Complete.String
 import Complete.FileCompleter
-import Shell.Types
-import Shell.Helpers
+import CLI.Types
+import CLI.Helpers
 import Corext.AliasCompleter
 
 import Prelude

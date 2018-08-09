@@ -1,11 +1,11 @@
-module Shell.ShellMode.CompletionHandler where
+module CLI.ShellMode.CompletionHandler where
 
 import Complete
 import Complete.FileCompleter
 import Complete.String
 import Complete.Trie (insertTrie)
 import Complete.Types
-import Shell.Types
+import CLI.Types
 
 import Control.Monad
 import Data.Maybe

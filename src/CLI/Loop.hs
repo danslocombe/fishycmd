@@ -2,14 +2,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Shell.Loop where
+module CLI.Loop where
 
 import Complete
 import Complete.String
-import Shell.State
-import Shell.Types
-import Shell.KeyPress
-import Shell.Helpers
+import CLI.State
+import CLI.Types
+import CLI.KeyPress
+import CLI.Helpers
 
 import Control.Monad.IO.Class
 import Control.Monad.RWS

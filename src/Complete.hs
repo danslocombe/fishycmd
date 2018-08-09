@@ -18,8 +18,8 @@ import Complete.FileCompleter
 import Complete.String
 import Complete.Trie
 import Complete.Types
-import Shell.State
-import Shell.Types
+import CLI.State
+import CLI.Types
 
 import Prelude hiding (lookup)
 import Data.Function (on)

@@ -1,14 +1,14 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-module Shell.ShellMode.Effect where
+module CLI.ShellMode.Effect where
 
 import Complete.String
 import Complete
-import Shell.State
-import Shell.Types
-import Shell.ShellMode.CompletionHandler
-import Shell.ShellMode.FishyCommand
-import Shell.ShellMode.Prompt
+import CLI.State
+import CLI.Types
+import CLI.ShellMode.CompletionHandler
+import CLI.ShellMode.FishyCommand
+import CLI.ShellMode.Prompt
 
 import System.Signal
 import Data.Maybe

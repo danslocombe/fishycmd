@@ -8,13 +8,13 @@ import Data.Maybe
 import Data.List.Split hiding (oneOf)
 import Data.List (intersperse)
 import System.Environment
-import Shell.Helpers
+import CLI.Helpers
+import CLI.Types
 
 import Text.Parsec
 import Text.Parsec.Char
 import Data.List
 
-import Shell.Types
 
 inetroot :: IO (Maybe String)
 inetroot = lookup "INETROOT" <$> getEnvironment

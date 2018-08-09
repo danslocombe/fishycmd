@@ -1,9 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
-module Shell.ShellMode.FishyCommand where
+module CLI.ShellMode.FishyCommand where
 
-import Shell.Types
-import Shell.State
+import CLI.Types
+import CLI.State
 
 import Text.Parsec
 import Text.Parsec.Char

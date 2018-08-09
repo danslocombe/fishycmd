@@ -1,6 +1,6 @@
-module Shell.ShellMode.Prompt where
+module CLI.ShellMode.Prompt where
 
-import Shell.Types
+import CLI.Types
 import Data.Maybe (maybeToList)
 import Data.List.Zipper hiding (insert)
 

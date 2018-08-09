@@ -1,6 +1,6 @@
 {-# LANGUAGE ForeignFunctionInterface #-}
 
-module Shell.KeyPress
+module CLI.KeyPress
   ( matchChar
   , getHiddenChar
   ) where
@@ -8,9 +8,9 @@ module Shell.KeyPress
 import Foreign.C.Types
 import GHC.IO.Exception
 import Data.Char (chr, ord)
-import Shell.State
-import Shell.Types
-import Shell.ShellMode.Prompt
+import CLI.State
+import CLI.Types
+import CLI.ShellMode.Prompt
 
 import Data.List.Zipper hiding (insert)
 

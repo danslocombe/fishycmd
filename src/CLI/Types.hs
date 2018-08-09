@@ -3,7 +3,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Shell.Types where
+module CLI.Types where
 
 
 import Complete.String

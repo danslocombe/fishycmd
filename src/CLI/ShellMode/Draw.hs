@@ -1,9 +1,9 @@
-module Shell.ShellMode.Draw (prePrompt, drawCompletion) where
+module CLI.ShellMode.Draw (prePrompt, drawCompletion) where
 
 import Complete
 import Complete.String
-import Shell.State
-import Shell.Helpers
+import CLI.State
+import CLI.Helpers
 
 import Control.Monad
 import Data.List.Zipper

@@ -1,8 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
-module Shell.Helpers where
+module CLI.Helpers where
 
-import Shell.Types
+import CLI.Types
 import Complete.Types
 
 import Control.Monad

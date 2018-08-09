@@ -2,14 +2,14 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Shell.ShellMode where
+module CLI.ShellMode where
 
-import Shell.State
-import Shell.Types
-import Shell.Helpers
-import Shell.ShellMode.CompletionHandler
-import Shell.ShellMode.Effect
-import Shell.ShellMode.Draw
+import CLI.State
+import CLI.Types
+import CLI.Helpers
+import CLI.ShellMode.CompletionHandler
+import CLI.ShellMode.Effect
+import CLI.ShellMode.Draw
 
 import System.Console.ANSI
 import Control.Monad.IO.Class

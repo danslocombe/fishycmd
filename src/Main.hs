@@ -1,6 +1,6 @@
 module Main where
 
-import Shell.State
+import CLI.State
   ( FishyState
   , cleanState
   , loadState
@@ -8,9 +8,9 @@ import Shell.State
   )
 --import Shell.Update ( updateIOState )
 --import Shell.Command ( CommandProcessResult (..) )
-import Shell.Loop
-import Shell.ShellMode
-import Shell.Helpers ((?->))
+import CLI.Loop
+import CLI.ShellMode
+import CLI.Helpers ((?->))
 import Test.Trie
   
 import Control.Monad
