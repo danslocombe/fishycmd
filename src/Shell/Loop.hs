@@ -6,7 +6,6 @@ module Shell.Loop where
 
 import Complete
 import Complete.String
-import Shell.CompleteHandler
 import Shell.State
 import Shell.Types
 import Shell.KeyPress
