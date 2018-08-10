@@ -10,6 +10,7 @@ import CLI.State
 import CLI.Types
 import CLI.KeyPress
 import CLI.Helpers
+import CLI.Modes
 
 import Control.Monad.IO.Class
 import Control.Monad.RWS
@@ -21,18 +22,19 @@ loop mode = do
   loop' mode
 
 loop' :: Mode -> FishyMonad ()
-loop' Mode{..} = do
+loop' mode = do
 
   s <- get
   nextChar <- liftIO getHiddenChar
   let commandInput = matchChar s nextChar
 
-  next <- update commandInput
-
-  draw
+  next <- (update mode) commandInput
 
   case next of
-    Just m -> loop m
+    Just m -> do
+      let mode' = lookupMode m
+      draw mode'
+      loop mode'
     Nothing -> return ()
 
   -- state <- get

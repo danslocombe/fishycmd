@@ -10,6 +10,8 @@ import CLI.State
 --import Shell.Command ( CommandProcessResult (..) )
 import CLI.Loop
 import CLI.ShellMode
+import CLI.Modes
+import CLI.Types
 import CLI.Helpers ((?->))
 import Test.Trie
   
@@ -83,7 +85,7 @@ main = do
   -- Don't exit
   -- cd <- getCurrentDirectory
   -- let cpr = CommandProcessResult [] cd True False
-  runStateT (loop shellMode) state
+  runStateT (loop (lookupMode ShellMode)) state
   return ()
 
   -- Enter main loop

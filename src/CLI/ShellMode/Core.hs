@@ -2,7 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module CLI.ShellMode where
+module CLI.ShellMode.Core where
 
 import CLI.State
 import CLI.Types
@@ -10,9 +10,6 @@ import CLI.Helpers
 import CLI.ShellMode.CompletionHandler
 import CLI.ShellMode.Effect
 import CLI.ShellMode.Draw
-import CLI.SearchMode (searchDraw)
-
-import Search
 
 import System.Console.ANSI
 import Control.Monad.IO.Class
@@ -25,10 +22,10 @@ import System.Directory
 import Complete
 import Complete.String
 
-shellUpdate :: CommandInput -> FishyMonad (Maybe CLIMode)
-shellUpdate Exit = return Nothing
-shellUpdate Search = return $ Just SearchMode
-shellUpdate command = do
+
+smUpdate :: CommandInput -> FishyMonad (Maybe Mode)
+smUpdate Exit = return Nothing
+smUpdate command = do
 
   aliases <- getAliases <$> get
   cachedCompletionResult <- getCachedCompletions <$> get
@@ -42,7 +39,7 @@ shellUpdate command = do
   let rebuildCompleters = getRebuildCompleters commandResult
       nextMode = if getExit commandResult
         then Nothing
-        else Just ShellMode
+        else Just shellMode
 
   modify (\s -> s { getBufferedCommands = getNewCommands commandResult
           , getCurrentDir = getCommandLocation commandResult }
@@ -85,8 +82,8 @@ shellUpdate command = do
 
   return nextMode
 
-shellDraw :: FishyMonad ()
-shellDraw = (getCachedCompletions <$> get) >>= drawState
+smDraw :: FishyMonad ()
+smDraw = (getCachedCompletions <$> get) >>= drawState
   --drawCompletion lastPromptHeight pp getPrompt currentCompletion Red
 
 drawShellMode :: Int -> (Zipper Char) -> StringCompletion -> Color -> IO Int
@@ -131,8 +128,4 @@ addToHistory :: [String] -> FishyMonad ()
 addToHistory cs = do
   state <- get
   let (Zip historyL historyR) = getHistoryLogs state
-      hi = getHistoryIndex state
-  put state
-    { getHistoryLogs = Zip (cs ++ historyL) historyR
-    , getHistoryIndex = foldl hiNewCommand hi cs
-    }
+  put state {getHistoryLogs = Zip (cs ++ historyL) historyR}

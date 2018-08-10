@@ -47,6 +47,8 @@ executable trie
                      , CLI.Types
                      , CLI.Helpers
                      , CLI.Loop
+                     , CLI.Modes
+                     , CLI.SearchMode
                      , CLI.ShellMode
                      , CLI.ShellMode.Draw
                      , CLI.ShellMode.CompletionHandler
@@ -55,4 +57,5 @@ executable trie
                      , CLI.ShellMode.FishyCommand
                      , Corext.AliasCompleter
                      , Test.Trie
+                     , Search
   extra-lib-dirs:      lib

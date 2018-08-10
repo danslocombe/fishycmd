@@ -23,10 +23,12 @@ import Control.Monad.RWS.Class
 type FishyMonad a = forall m. (MonadState FishyState m, MonadIO m) => m a
 
 data Mode = Mode
-  { update :: CommandInput -> FishyMonad (Maybe Mode)
+  { update :: CommandInput -> FishyMonad (Maybe CLIMode)
   -- , draw :: FishyState -> IO ()
   , draw :: FishyMonad ()
   }
+
+data CLIMode = ShellMode | SearchMode
 
 data CompletionHandler = CompletionHandler --CompletionHandler [FishyCompleterResult] Int
   { getHistoryTries          :: [StringTrie]

@@ -30,7 +30,7 @@ import Control.Monad.Trans.Class
 import Text.Regex.Posix ((=~))
 import System.Console.ANSI
 import qualified Control.Monad.Trans.State.Strict as ST
-import qualified Data.Map.Lazy as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.ByteString as BS
 import Data.Maybe (maybeToList)
   
@@ -65,7 +65,7 @@ cleanState debug verbose global local logs = do
     , getCurrentDir            = cd
     , getDebug                 = debug
     , getVerbose               = verbose
-    , getHistoryLogs           = [] -- (Zip (reverse logs) []) Do we want history from prev session?
+    , getHistoryLogs           = empty -- (Zip (reverse logs) []) Do we want history from prev session?
     , getHistoryIndex          = hiNew
     , getAliases               = aliases'
     }
