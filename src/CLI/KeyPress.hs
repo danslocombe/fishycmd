@@ -40,7 +40,7 @@ matchChar state c = case ord c of
   116 -> ifControlPrepped $ moveBlockRight p   -- Ctrl+Right if prepped
   14  -> HistoryForward               -- Ctrl p
   16  -> HistoryBack                  -- Ctrl n
-  18  -> Search
+  -- 18  -> Search
   72  -> if getControlPrepped state then HistoryBack else Text (push c p)
   80  -> if getControlPrepped state then HistoryForward else Text (push c p)
   71  -> ifControlPrepped $ Zip [] (toList p) -- Home
