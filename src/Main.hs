@@ -6,8 +6,7 @@ import CLI.State
   , loadState
   , storePath
   )
---import Shell.Update ( updateIOState )
---import Shell.Command ( CommandProcessResult (..) )
+
 import CLI.Loop
 import CLI.ShellMode
 import CLI.Modes
@@ -80,25 +79,8 @@ main = do
     then cleanState debug verbose [] Map.empty []
     else loadState debug verbose
 
-  -- No new commands
-  -- Rebuild completers
-  -- Don't exit
-  -- cd <- getCurrentDirectory
-  -- let cpr = CommandProcessResult [] cd True False
   runStateT (loop (lookupMode ShellMode)) state
   return ()
-
-  -- Enter main loop
-  --fishyLoop cpr state
-
---fishyLoop :: CommandProcessResult -> FishyState -> IO ()
---fishyLoop cpr state = do
-
-  --(res, state')
-    -- <- runStateT (updateIOState cpr) state
---
-  --not (getExit res)
-    -- ?-> fishyLoop res state'
 
 entryString :: String
 entryString = "Fishy v0.4     >°))))<"

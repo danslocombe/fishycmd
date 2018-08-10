@@ -30,7 +30,7 @@ data Mode = Mode
 
 data CLIMode = ShellMode | SearchMode
 
-data CompletionHandler = CompletionHandler --CompletionHandler [FishyCompleterResult] Int
+data CompletionHandler = CompletionHandler
   { getHistoryTries          :: [StringTrie]
   , getLocalizedHistoryTries :: Map.Map FilePath [StringTrie]
   , getPathTries             :: [StringTrie]
@@ -55,7 +55,7 @@ data FishyState = FishyState
   , getCachedCompletions     :: CompletionHandlerResult
   , currentCompletion        :: String
   , getPrompt                :: Zipper Char
-  , lastPromptHeight         :: Int -- TODO remote
+  , lastPromptHeight         :: Int -- TODO remove
   , getControlPrepped        :: Bool
   , getBufferedCommands      :: [String]
   , getCurrentDir            :: FilePath
