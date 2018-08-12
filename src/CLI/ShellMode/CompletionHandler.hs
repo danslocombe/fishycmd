@@ -18,6 +18,12 @@ import System.Directory
 firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
 firstCompletionResult (CompletionHandlerResult xs c) = (fromMaybe (Completion [] 0) $ listToMaybe xs, Red)
 
+cycledCompletionResult :: CompletionHandler -> CompletionHandlerResult ->  (StringCompletion, Color)
+cycledCompletionResult handler (CompletionHandlerResult xs c) 
+  = (fromMaybe (Completion [] 0) $ xs !%! n, Red)
+  where
+    n = getCycle handler
+
 updateCompletionHandler :: CompletionHandler ->
                            Zipper Char ->
                            FilePath ->

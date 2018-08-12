@@ -51,13 +51,11 @@ execCommand c = case splitOn " " c of
 
         -- Should we block for the result?
         (liftIO $ blockForCommand c) ?~> do
-          --liftIO $ putStrLn "blocking"
           -- Install an interrupt handler that kills the child process
           liftIO $ installHandler sigINT 
             (\sig -> do {
                 killHandler phandle sig; hFlush stdout})
           liftIO $ waitForProcess phandle
-          --liftIO $ putStrLn "done"
 
         -- Update state
         modify (\s ->

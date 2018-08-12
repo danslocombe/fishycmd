@@ -59,17 +59,21 @@ shellUpdate command = do
         (getNewCommands commandResult)
       -- Return old handler
       put $ s {getCompletionHandler = ch'}
+      let completionResult = (getCurrentCompletion ch') (toList $ getPrompt s) (getCurrentDir s)
+
+      let s' = s {getCachedCompletions = completionResult}
+      put s'
       return ch'
     else (getCompletionHandler <$> get)
 
   -- Update search index
 
   -- Run completion handler
-  s <- get
-  let completionResult = (getCurrentCompletion ch') (toList $ getPrompt s) (getCurrentDir s)
 
-  let s' = s {getCachedCompletions = completionResult}
-  put s'
+  -- TODO PUT THIS IN REBUILD
+  -----------------------------
+  s' <- get
+  --- ----------------------------
 
   -- If we have performed some non-trivial action
   -- save the state
@@ -79,9 +83,9 @@ shellUpdate command = do
     ?-> saveState'
 
   -- log the completions
-  getDebug s' ?-> do
-    cd <- liftIO $ getCurrentDirectory
-    liftIO $ logCompletions (toList $ getPrompt s') cd completionResult
+  getDebug s' ?-> return ()
+    --cd <- liftIO $ getCurrentDirectory
+    --liftIO $ logCompletions (toList $ getPrompt s') cd completionResult
 
   return nextMode
 
@@ -96,17 +100,17 @@ drawShellMode lastHeight prompt (Completion completion _) color = do
   cd <- getCurrentDirectory
   let completionLen = length completion
   -- Show all tries
-  --putStrLn $ show $ (\(FishyCompleterResult x _) -> x) <$> rs
   drawCompletion lastHeight preprompt prompt completion color
   let lenTotal = length preprompt + max (length (toList prompt)) completionLen
   return $ 1 + (lenTotal `div` ww)
 
+-- todo refactor into io instead of fishymonad
 drawState :: CompletionHandlerResult -> FishyMonad ()
 drawState result = do
   state <- get
   let lastHeight = lastPromptHeight state
       prompt@(Zip promptL promptR) = getPrompt state
-      (completion, color) = firstCompletionResult result
+      (completion, color) = cycledCompletionResult (getCompletionHandler state) result
       -- Warning! Hacks!
       completion' = if 
       -- If we are cycling through partial completions don't draw anything
