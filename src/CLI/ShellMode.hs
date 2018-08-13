@@ -66,14 +66,7 @@ shellUpdate command = do
       return ch'
     else (getCompletionHandler <$> get)
 
-  -- Update search index
-
-  -- Run completion handler
-
-  -- TODO PUT THIS IN REBUILD
-  -----------------------------
   s' <- get
-  --- ----------------------------
 
   -- If we have performed some non-trivial action
   -- save the state

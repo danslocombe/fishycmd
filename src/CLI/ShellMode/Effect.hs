@@ -220,5 +220,5 @@ asyncExtensions = ["csproj", "sln", "txt", "cs", "bond", "ini", "log"]
 
 extension :: String -> Maybe String
 extension s = case dropWhile (/= '.') s of
-  (_:ext) -> Just ext
+  (_:ext) -> Just $ maybe ext id (extension ext)
   _ -> Nothing
