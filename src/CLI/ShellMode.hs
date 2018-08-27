@@ -58,10 +58,9 @@ shellUpdate command = do
         (getCommandLocation commandResult)
         (getNewCommands commandResult)
       -- Return old handler
-      put $ s {getCompletionHandler = ch'}
       let completionResult = (getCurrentCompletion ch') (toList $ getPrompt s) (getCurrentDir s)
 
-      let s' = s {getCachedCompletions = completionResult}
+      let s' = s {getCompletionHandler = ch', getCachedCompletions = completionResult}
       put s'
       return ch'
     else (getCompletionHandler <$> get)
@@ -71,9 +70,10 @@ shellUpdate command = do
   -- If we have performed some non-trivial action
   -- save the state
   let newCommands = getNewCommands commandResult
-  addToHistory newCommands
   length newCommands > 0
-    ?-> saveState'
+    ?-> do
+      addToHistory newCommands
+      saveState'
 
   -- log the completions
   getDebug s' ?-> return ()
