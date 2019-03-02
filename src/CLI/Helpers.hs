@@ -26,7 +26,7 @@ infix 0 ?~>
 (?~>) :: (Monad m) => m Bool -> m a -> m ()
 (?~>) = flip (<~?)
 
--- f Only if x
+-- fi x then f
 infix 0 ?->
 (?->) :: (Applicative f) => Bool -> f() -> f ()
 (?->) = flip (<-?)

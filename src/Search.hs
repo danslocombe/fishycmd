@@ -45,7 +45,7 @@ levenshtein s s' i j = minimum $ [d0,d1,d2] ++ maybeToList d3
       then Just $ levenshtein s s' (i-2) (j-2) + 1
       else Nothing
 
-
+-- https://en.wikipedia.org/wiki/BK-tree
 -- No point in being generic, could in theory have Eq a => [a] instead of strings
 -- Here a represents the payload
 data BKTree a = BKTree
@@ -137,7 +137,7 @@ data HistoryIndex = HistoryIndex
 hiNew :: HistoryIndex
 hiNew = HistoryIndex
   { hiTrie = bkNew "fishy" [0]
-  , hiArchive = Map.fromList [(0, ArchivedCommand "echo \"hello from fishy search!\"" 1)]
+  , hiArchive = Map.fromList []
   , hiNextId = 1
   , hiLookupMaxDist = 4
   }
@@ -207,8 +207,6 @@ hiNewCommand h s = ret
 
 hiFromCommands :: [String] -> HistoryIndex
 hiFromCommands = foldl hiNewCommand hiNew
-
-
 
 --- --- --- These are hacky --- --- -- ---- -
 --- Really we need a module for splitting ---

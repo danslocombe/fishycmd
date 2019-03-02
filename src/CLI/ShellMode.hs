@@ -18,6 +18,7 @@ import System.Console.ANSI
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
 import Data.List.Zipper (Zipper (..), toList)
+import Data.List (nub, (\\))
 import System.Console.Terminal.Size
 import System.Directory
 
@@ -125,11 +126,21 @@ saveState' = do
   liftIO $ saveState state
 
 addToHistory :: [String] -> FishyMonad ()
-addToHistory cs = do
+addToHistory newCommands = do
   state <- get
   let (Zip historyL historyR) = getHistoryLogs state
       hi = getHistoryIndex state
+      historyL' = if (all whitespace newCommands) 
+        then reverse historyR ++ historyL
+        else case historyL of 
+          (x:xs) -> (filter (/= x) newCommands) ++ (reverse historyR) ++ historyL
+          _ -> nub newCommands ++ reverse historyR
+  --liftIO $ putStrLn $ show historyL
+  --liftIO $ putStrLn $ show historyR
   put state
-    { getHistoryLogs = Zip (cs ++ historyL) historyR
-    , getHistoryIndex = foldl hiNewCommand hi cs
+    { getHistoryLogs = Zip (historyL' ++ historyR) []
+    , getHistoryIndex = foldl hiNewCommand hi newCommands
     }
+
+whitespace :: String -> Bool
+whitespace = all (== ' ')

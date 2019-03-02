@@ -12,9 +12,7 @@ import Complete.String
 
 runTests :: IO ()
 runTests = do
-  putStrLn "lookup new entry"
-  quickCheck prop_lookupNewEntry
-  putStrLn "lookup all new entries"
+  putStrLn "lookup new entries"
   quickCheck prop_lookupAllNewEntries
   putStrLn "check relevance matters"
   quickCheck prop_relevanceMatters
@@ -32,7 +30,10 @@ prop_RevRev :: Eq a => [a] -> Bool
 prop_RevRev xs = reverse (reverse xs) == xs
 
 instance Arbitrary CharWeight where
-  arbitrary = CharWeight <$> arbitrary <*> arbitrary
+  arbitrary = do
+    c <- arbitrary
+    w <- abs <$> arbitrary
+    return $ CharWeight c w
 
 instance Arbitrary StringTrie where
   arbitrary = choose (0, 10) >>= getArb
@@ -69,12 +70,6 @@ none = (not .) . any
 type NonEmptyStr = NonEmptyList Char
 
 -- Tests --
-
-prop_lookupNewEntry :: String -> [StringTrie] -> Property
-prop_lookupNewEntry s ts = 
-  length s > 0 ==>
-  let ts' = insertTrie s ts
-  in cwToString (lookupTrie s ts') == s
 
 
 prop_lookupAllNewEntries :: NonEmptyStr -> [NonEmptyStr] -> [StringTrie] -> Bool

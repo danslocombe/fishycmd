@@ -83,7 +83,7 @@ main = do
   return ()
 
 entryString :: String
-entryString = "Fishy v0.4.02     >°))))<"
+entryString = "Fishy v0.4.03     >°))))<"
 
 entryString2 :: String
 entryString2 = "\n\

@@ -56,7 +56,6 @@ splitCompletion :: String -> String -> String
 splitCompletion p c = p ++ compl
                 -- given a prefix and a completion, we return the prefix with the split completion
                 -- TODO also pass in context to determine when we need to split
-                -- TODO maybe split on "." for filenames?
                 where
                   c' = drop (length p) c
                   compl = fromMaybe "" $ listToMaybe $ split'
