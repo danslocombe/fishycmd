@@ -63,9 +63,7 @@ searchDraw = do
     setCursorColumn 0
     clearFromCursorToLineEnd
 
-  if length lookups == 0
-    then liftIO $ putStrLn "Searching: "
-    else liftIO $ putStrLn "Search Results:"
+  liftIO $ putStrLn "Fishy Search: "
 
   liftIO $ mapM (\(i, x) -> do
     -- Debug show all
