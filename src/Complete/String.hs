@@ -39,8 +39,11 @@ instance ConcreteTrie Char CharWeight where
     3 * (getFinal t) > (maxChildWeight)
     where
       maxChildWeight = maxorzero $ (getWeight . getData) <$> getChildren t
+
       maxorzero [] = 0
       maxorzero xs = maximum xs
+
+-- --- --- -- -- -  - - -- - --- -- --- --- -- 
 
 stripQuotes :: String -> String
 stripQuotes = filter (/= '"')
@@ -52,6 +55,13 @@ stripDoubleBackslash (x:xs) = x : stripDoubleBackslash xs
 
 parseFilename :: String -> String
 parseFilename = stripQuotes . stripDoubleBackslash
+
+escapeSpace :: String -> String
+escapeSpace = concatMap (\x -> case x of 
+    ' ' -> "\\ "
+    y -> [y])
+
+-- --- --- -- -- -  - - -- - --- -- --- --- -- 
 
 -- Build a standard trie for strings
 buildTries :: [String] -> [Trie CharWeight]
@@ -65,9 +75,3 @@ cwToString = fmap cwToChar
 
 buildFileTries :: String -> IO [Trie CharWeight]
 buildFileTries dir = buildTries <$> (listDirectory =<< getCurrentDirectory)
-
-escapeSpace :: String -> String
-escapeSpace = concatMap (\x -> case x of 
-    ' ' -> "\\ "
-    y -> [y])
-

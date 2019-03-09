@@ -29,7 +29,9 @@ loop' mode = do
   s <- get
   nextChar <- liftIO getHiddenChar
   let commandInput = matchChar s nextChar
-  liftIO $ putStrLn $ show $ ord nextChar
+
+  -- Show character number
+  -- liftIO $ putStrLn $ show $ ord nextChar
 
   next <- (update mode) commandInput
 

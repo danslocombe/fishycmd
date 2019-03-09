@@ -24,7 +24,7 @@ type FishyMonad a = forall m. (MonadState FishyState m, MonadIO m) => m a
 
 data Mode = Mode
   { update :: CommandInput -> FishyMonad (Maybe CLIMode)
-  -- , draw :: FishyState -> IO ()
+  -- , draw :: FishyState -> IO (), should be this, drawing shouldnt modify state
   , draw :: FishyMonad ()
   }
 

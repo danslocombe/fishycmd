@@ -13,7 +13,10 @@ import Data.List (sort)
 data Trie a = TrieNode 
   { getData :: a
   , getChildren :: [Trie a]
+
+  -- The number of inserted xs : [a] that end exactly on this node
   , getFinal :: Int
+
   } deriving (Generic, Show, Eq, Ord)
 
 instance (Serialize a) => Serialize (Trie a)
@@ -55,6 +58,8 @@ insertTrie (x:xs) ts = ret
             then 
               if null xs
                 then t { getData = update x v
+                       -- Only update the node's 'final' when this is the endpoint for insertion
+                       -- i.e. the end of the string
                        , getFinal = f + 1
                        }
                 else t { getData = update x v
@@ -92,7 +97,6 @@ allTrieMatches (x:xs) ts = ret
          ((\x -> y:x) <$> addCurrent t ++ (allTrieMatches xs children))
 
     addCurrent t = if finalHeuristic t then [[]] else []
-
 
 lookupTrie :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [b]
 lookupTrie [] ts = bestEntry ts
