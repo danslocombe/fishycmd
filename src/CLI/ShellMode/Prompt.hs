@@ -1,32 +1,10 @@
 module CLI.ShellMode.Prompt where
 
 import CLI.Types
+import CLI.Helpers
+
 import Data.Maybe (maybeToList)
 import Data.List.Zipper hiding (insert)
-
--- Functions for treating zipper as two stacks
-
-pushTopZipper :: a -> Zipper a -> Zipper a
-pushTopZipper y (Zip xs ys) = Zip xs (y : ys)
-
-pushBotZipper :: a -> Zipper a -> Zipper a
-pushBotZipper x (Zip xs ys) = Zip (x : xs) ys
-
-popTopZipper :: Zipper a -> (Zipper a, Maybe a)
-popTopZipper (Zip xs (y:ys)) = (Zip xs ys, Just y)
-popTopZipper (Zip xs []) = (Zip xs [], Nothing)
-
-popBotZipper :: Zipper a -> (Zipper a, Maybe a)
-popBotZipper (Zip (x:xs) ys) = (Zip xs ys, Just x)
-popBotZipper (Zip [] ys) = (Zip [] ys, Nothing)
-
-safeHead :: [a] -> Maybe a
-safeHead []     = Nothing
-safeHead (x:xs) = Just x
-
-safeTail :: [a] -> Maybe [a]
-safeTail []     = Nothing
-safeTail (x:xs) = Just xs
 
 -- Functions for traversing prompt
 

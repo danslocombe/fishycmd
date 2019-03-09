@@ -22,7 +22,6 @@ import Data.List (nub, (\\))
 import System.Console.Terminal.Size
 import System.Directory
 
--- todo these shouldnt be dependencies
 import Complete
 import Complete.String
 
@@ -98,7 +97,7 @@ drawShellMode lastHeight prompt (Completion completion _) color = do
   let lenTotal = length preprompt + max (length (toList prompt)) completionLen
   return $ 1 + (lenTotal `div` ww)
 
--- todo refactor into io instead of fishymonad
+-- TODO refactor into io instead of fishymonad
 drawState :: CompletionHandlerResult -> FishyMonad ()
 drawState result = do
   state <- get
@@ -135,8 +134,6 @@ addToHistory newCommands = do
         else case historyL of 
           (x:xs) -> (filter (/= x) newCommands) ++ (reverse historyR) ++ historyL
           _ -> nub newCommands ++ reverse historyR
-  --liftIO $ putStrLn $ show historyL
-  --liftIO $ putStrLn $ show historyR
   put state
     { getHistoryLogs = Zip (historyL' ++ historyR) []
     , getHistoryIndex = foldl hiNewCommand hi newCommands

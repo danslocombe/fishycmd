@@ -8,6 +8,7 @@ import Complete.Types
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
+import Data.List.Zipper
 
 import System.Environment
 
@@ -30,6 +31,9 @@ infix 0 ?~>
 infix 0 ?->
 (?->) :: (Applicative f) => Bool -> f() -> f ()
 (?->) = flip (<-?)
+
+(+^+) :: Monad m => m [a] -> m [a] -> m [a]
+(+^+) = liftM2 (++)
 
 -- Run some arbitrary IO if we are running in debug mode
 ifDebug :: IO () -> FishyMonad ()
@@ -62,3 +66,27 @@ logCompletions prefix cd completions = do
 (!?!) [] _ = Nothing
 (!?!) (x:_) 0 = Just x
 (!?!) (x:xs) n = xs !?! (n-1)
+
+safeHead :: [a] -> Maybe a
+safeHead []     = Nothing
+safeHead (x:xs) = Just x
+
+safeTail :: [a] -> Maybe [a]
+safeTail []     = Nothing
+safeTail (x:xs) = Just xs
+
+-- Functions for treating zipper as two stacks
+
+pushTopZipper :: a -> Zipper a -> Zipper a
+pushTopZipper y (Zip xs ys) = Zip xs (y : ys)
+
+pushBotZipper :: a -> Zipper a -> Zipper a
+pushBotZipper x (Zip xs ys) = Zip (x : xs) ys
+
+popTopZipper :: Zipper a -> (Zipper a, Maybe a)
+popTopZipper (Zip xs (y:ys)) = (Zip xs ys, Just y)
+popTopZipper (Zip xs []) = (Zip xs [], Nothing)
+
+popBotZipper :: Zipper a -> (Zipper a, Maybe a)
+popBotZipper (Zip (x:xs) ys) = (Zip xs ys, Just x)
+popBotZipper (Zip [] ys) = (Zip [] ys, Nothing)

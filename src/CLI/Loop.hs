@@ -16,6 +16,8 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS
 import Control.Monad.RWS.Class
 
+import Data.Char (chr, ord)
+
 loop :: Mode -> FishyMonad ()
 loop mode = do
   draw mode
@@ -27,6 +29,7 @@ loop' mode = do
   s <- get
   nextChar <- liftIO getHiddenChar
   let commandInput = matchChar s nextChar
+  liftIO $ putStrLn $ show $ ord nextChar
 
   next <- (update mode) commandInput
 

@@ -7,6 +7,7 @@ module CLI.SearchMode where
 
 import CLI.State
 import CLI.Types
+import CLI.Helpers
 
 import CLI.ShellMode.Draw (prePrompt)
 
@@ -19,6 +20,9 @@ import System.Console.ANSI
 import System.IO
 import Data.List.Zipper (Zipper (..), toList, fromList)
 
+import System.Console.ANSI
+import System.Console.Terminal.Size
+
 searchUpdate :: CommandInput -> FishyMonad (Maybe CLIMode)
 searchUpdate ci = case ci of
   Text prompt -> do
@@ -26,16 +30,20 @@ searchUpdate ci = case ci of
       s { getPrompt = prompt })
     return $ Just SearchMode
 
-  Run -> do
-    s <- get
-    let lookups = execSearch s
-    case lookups of
-      [] -> return ()
-      (x:xs) -> modify (\s -> s {getPrompt = Zip (reverse x) []})
-
-    return $ Just ShellMode
+  PartialComplete -> selectSearchResult >> (return $ Just ShellMode)
+  Complete        -> selectSearchResult >> (return $ Just ShellMode)
+  Run             -> selectSearchResult >> (return $ Just ShellMode)
 
   _ -> return $ Just ShellMode
+
+selectSearchResult :: FishyMonad ()
+selectSearchResult = do
+  s <- get
+  let lookups = execSearch s
+  case lookups of
+    [] -> return ()
+    (x:xs) -> modify (\s -> s {getPrompt = Zip (reverse x) []})
+
 
 execSearch :: FishyState -> [String]
 execSearch state = res
@@ -66,8 +74,15 @@ searchDraw = do
   liftIO $ putStrLn "Fishy Search: "
 
   liftIO $ mapM (\(i, x) -> do
-    -- Debug show all
-    putStrLn $ "(" ++ show i ++ ") " ++ show x
+    let s = "(" ++ show i ++ ") " ++ show x
+
+    if i == 0 
+      then do
+        setSGR [SetColor Foreground Vivid Red]
+        putStrLn s
+        setSGR [Reset]
+      else
+        putStrLn s 
     ) $ zip [0..] lookups
 
   --liftIO $ cursorUp (length lookups)
