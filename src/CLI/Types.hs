@@ -62,7 +62,7 @@ data FishyState = FishyState
   , getDebug                 :: Bool
   , getVerbose               :: Bool
   , getHistoryLogs           :: Zipper String
-  , getHistoryIndex          :: HistoryIndex
+  , getHistoryIndex          :: Maybe HistoryIndex
   , getAliases               :: [Alias]
   } deriving (Show)
 

@@ -13,15 +13,17 @@ import CLI.ShellMode.Draw (prePrompt)
 
 import Search
 
+import System.IO
+import System.Console.ANSI
+import System.Console.ANSI
+import System.Console.Terminal.Size
+
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
-import System.Console.ANSI
-import System.IO
-import Data.List.Zipper (Zipper (..), toList, fromList)
 
-import System.Console.ANSI
-import System.Console.Terminal.Size
+import Data.List.Zipper (Zipper (..), toList, fromList)
+import Data.Maybe (fromMaybe)
 
 searchUpdate :: CommandInput -> FishyMonad (Maybe CLIMode)
 searchUpdate ci = case ci of
@@ -30,26 +32,42 @@ searchUpdate ci = case ci of
       s { getPrompt = prompt })
     return $ Just SearchMode
 
-  PartialComplete -> selectSearchResult >> (return $ Just ShellMode)
-  Complete        -> selectSearchResult >> (return $ Just ShellMode)
-  Run             -> selectSearchResult >> (return $ Just ShellMode)
+  PartialComplete -> selectEndSearch
+  Complete        -> selectEndSearch
+  Run             -> selectEndSearch
 
   _ -> return $ Just ShellMode
 
-selectSearchResult :: FishyMonad ()
-selectSearchResult = do
-  s <- get
-  let lookups = execSearch s
+selectEndSearch :: FishyMonad (Maybe CLIMode)
+selectEndSearch = do
+  setPromptTopResult
+  -- Clear temp index
+  modify (\s -> s {getHistoryIndex = Nothing})
+  return $ Just ShellMode
+
+setPromptTopResult :: FishyMonad ()
+setPromptTopResult = do
+  hi <- getIndex
+  state <- get
+  let query = toList $ getPrompt state 
+  let lookups = execSearch hi query
   case lookups of
     [] -> return ()
     (x:xs) -> modify (\s -> s {getPrompt = Zip (reverse x) []})
 
+getIndex :: FishyMonad HistoryIndex
+getIndex = do 
+    s <- get
+    case getHistoryIndex s of
+      Just hi -> return hi
+      Nothing -> do
+        let hi' = hiFromCommands $ toList $ getHistoryLogs s
+        modify (\s' -> s' {getHistoryIndex = Just hi'})
+        return hi'
 
-execSearch :: FishyState -> [String]
-execSearch state = res
+execSearch :: HistoryIndex -> String -> [String]
+execSearch hi query  = res
   where 
-    query = toList $ getPrompt state 
-    hi = getHistoryIndex state
     allLookups = hiLookupCommand hi query :: [(String, [String], Int)]
     lookups = filter (\(_,_,score) -> score > 1) $ allLookups
 
@@ -59,11 +77,13 @@ execSearch state = res
 
 maxResults = 5
 
-searchDraw :: FishyMonad()
+searchDraw :: FishyMonad ()
 searchDraw = do
   pp <- liftIO prePrompt
   state <- get
-  let lookups = take maxResults $ execSearch state
+  hi <- getIndex 
+  let query = toList $ getPrompt state 
+  let lookups = take maxResults $ execSearch hi query 
 
   -- TODO rember current search session max height
   liftIO $ replicateM_ (1 + maxResults) $ do -- (1 + length lookups) $ do
@@ -96,7 +116,7 @@ searchDraw = do
   liftIO clearFromCursorToLineEnd
   liftIO $ putStr "> "
   --liftIO $ putStr pp
-  liftIO $ putStr $ toList $ getPrompt state
+  liftIO $ putStr query
   liftIO $ hFlush stdout
 
   return ()

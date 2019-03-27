@@ -128,7 +128,7 @@ addToHistory :: [String] -> FishyMonad ()
 addToHistory newCommands = do
   state <- get
   let (Zip historyL historyR) = getHistoryLogs state
-      hi = getHistoryIndex state
+      -- hi = getHistoryIndex state
       historyL' = if (all whitespace newCommands) 
         then reverse historyR ++ historyL
         else case historyL of 
@@ -136,7 +136,7 @@ addToHistory newCommands = do
           _ -> nub newCommands ++ reverse historyR
   put state
     { getHistoryLogs = Zip (historyL' ++ historyR) []
-    , getHistoryIndex = foldl hiNewCommand hi newCommands
+    --, getHistoryIndex = foldl hiNewCommand hi newCommands
     }
 
 whitespace :: String -> Bool

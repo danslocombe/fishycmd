@@ -65,8 +65,8 @@ cleanState debug verbose global local logs = do
     , getCurrentDir            = cd
     , getDebug                 = debug
     , getVerbose               = verbose
-    , getHistoryLogs           = empty -- (Zip (reverse logs) []) Do we want history from prev session?
-    , getHistoryIndex          = hiNew
+    , getHistoryLogs           = (Zip (reverse logs) [])
+    , getHistoryIndex          = Nothing
     , getAliases               = aliases'
     }
 
