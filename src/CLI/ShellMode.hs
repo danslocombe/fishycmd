@@ -84,7 +84,6 @@ shellUpdate command = do
 
 shellDraw :: FishyMonad ()
 shellDraw = (getCachedCompletions <$> get) >>= drawState
-  --drawCompletion lastPromptHeight pp getPrompt currentCompletion Red
 
 drawShellMode :: Int -> (Zipper Char) -> StringCompletion -> Color -> IO Int
 drawShellMode lastHeight prompt (Completion completion _) color = do

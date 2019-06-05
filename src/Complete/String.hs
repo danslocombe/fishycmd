@@ -31,7 +31,7 @@ instance Serialize CharWeight
 instance Ord CharWeight where
   (CharWeight _ p) `compare` (CharWeight _ p') = p `compare` p'
 
-instance ConcreteTrie Char CharWeight where
+instance Trieable Char CharWeight where
   comp c (CharWeight c' _) = c == c'
   update c (CharWeight _ w) = CharWeight c (w + 1)
   new c = (CharWeight c 1)

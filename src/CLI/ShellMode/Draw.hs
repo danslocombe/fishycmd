@@ -118,3 +118,5 @@ drawCompletion lastHeight preprompt p@(Zip pl pr) completion color = do
   cursorDown $ len `div` ww
   setCursorColumn $ len `mod` ww
   hFlush stdout
+
+  --putStrLn $ show thisHeight

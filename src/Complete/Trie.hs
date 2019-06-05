@@ -19,35 +19,30 @@ data Trie a = TrieNode
 
   } deriving (Generic, Show, Eq, Ord)
 
-instance (Serialize a) => Serialize (Trie a)
-
-type Comp   a b = a -> b -> Bool
-type Update a b = a -> b -> b
-type New    a b = a -> b
-
 -- Trie typeclass, deals with data of type 'a' stored in the
 -- tries as type 'b'
-class ConcreteTrie a b | b -> a where
+class Trieable a b | b -> a where
   -- Compare from some 'a' outside the tries and a 'b' already in a trie
-  comp   :: Comp a b
+  comp   :: a -> b -> Bool
 
   -- Update the 'b' with information from 'a'
-  update :: Update a b
+  update :: a -> b -> b
 
-  -- Convert 'a' -> 'b'
-  new    :: New a b
+  new    :: a -> b
 
   -- If we have inserted abcd and abcde into a trie and
   -- we have input abc, when should we return the former and when the latter?
   -- finalHeuristic determines when we return the truncated string
   finalHeuristic :: Trie b -> Bool
 
+instance (Serialize a) => Serialize (Trie a)
+
 -- --- --- -- -- -  - - -- - --- -- --- --- -- 
 
-compTrie :: (ConcreteTrie a b, Eq b) => a -> Trie b -> Bool
+compTrie :: (Trieable a b, Eq b) => a -> Trie b -> Bool
 compTrie x t = comp x $ getData t
 
-insertTrie :: (ConcreteTrie a b, Eq b) => [a] -> [Trie b] -> [Trie b]
+insertTrie :: (Trieable a b, Eq b) => [a] -> [Trie b] -> [Trie b]
 insertTrie [] ts = ts
 insertTrie (x:xs) ts = ret 
   where -- We run upup over the child nodes
@@ -78,7 +73,7 @@ insertTrie (x:xs) ts = ret
             }]
           else ts'
 
-allLists :: forall a b. (ConcreteTrie a b) => [Trie b] -> [[b]]
+allLists :: forall a b. (Trieable a b) => [Trie b] -> [[b]]
 allLists ts = concatMap f ts
   where 
     f :: Trie b -> [[b]]
@@ -86,7 +81,7 @@ allLists ts = concatMap f ts
     f t@(TrieNode x cs f) = (\ls -> x : ls) <$> addCurrent t ++ (allLists cs)
     addCurrent t = if finalHeuristic t then [[]] else []
 
-allTrieMatches :: (ConcreteTrie a b, Eq b) => [a] -> [Trie b] -> [[b]]
+allTrieMatches :: (Trieable a b, Eq b) => [a] -> [Trie b] -> [[b]]
 allTrieMatches [] ts = allLists ts
 allTrieMatches (x:xs) ts = ret
   where
@@ -98,7 +93,7 @@ allTrieMatches (x:xs) ts = ret
 
     addCurrent t = if finalHeuristic t then [[]] else []
 
-lookupTrie :: (ConcreteTrie a b, Ord b) => [a] -> [Trie b] -> [b]
+lookupTrie :: (Trieable a b, Ord b) => [a] -> [Trie b] -> [b]
 lookupTrie [] ts = bestEntry ts
 lookupTrie (x:xs) ts = ret
   where
@@ -110,7 +105,7 @@ lookupTrie (x:xs) ts = ret
       then []
       else lookupTrie xs (getChildren t)
 
-bestEntry :: (ConcreteTrie a b, Ord b) => [Trie b] -> [b]
+bestEntry :: (Trieable a b, Ord b) => [Trie b] -> [b]
 bestEntry [] = []
 bestEntry ts = best:rest
   where
