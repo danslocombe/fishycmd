@@ -11,7 +11,6 @@ import CLI.Loop
 import CLI.ShellMode
 import CLI.Modes
 import CLI.Types
-import CLI.Helpers ((?->))
 import Test.Trie
   
 import Control.Monad
@@ -66,7 +65,7 @@ main = do
       verbose = getVerboseOption options
       test = getTestOption options
 
-  test ?-> runTests
+  when test runTests
 
   -- Create state path if it's missing
   createDirectoryIfMissing True <$> storePath

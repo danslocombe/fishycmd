@@ -15,9 +15,12 @@ import qualified Data.Map.Lazy as Map
 import System.Console.ANSI
 import System.Directory
 
+-- Try get first completion or give empty results
 firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
-firstCompletionResult (CompletionHandlerResult xs c) = (fromMaybe (Completion [] 0) $ listToMaybe xs, Red)
+firstCompletionResult (CompletionHandlerResult xs c) =
+  (fromMaybe (Completion [] 0) $ listToMaybe xs, Red)
 
+-- Get (n mod k)th completion where k is the number of completions
 cycledCompletionResult :: CompletionHandler -> CompletionHandlerResult ->  (StringCompletion, Color)
 cycledCompletionResult handler (CompletionHandlerResult xs c) 
   = (fromMaybe (Completion [] 0) $ xs !%! n, Red)
@@ -144,14 +147,15 @@ revCycleCompletionHandler handler = handler {getCycle = (getCycle handler) - 1}
 resetCompletionHandler :: CompletionHandler -> CompletionHandler
 resetCompletionHandler handler = handler {getCycle = 0}
 
-tomAbs :: (Integral a, Num a) => a -> a -> a
-tomAbs = (abs .) . mod
-
+-- Wrapping list indexing
+-- [0, 5, 2] !%! 4 = [0, 5, 2] !! 1 = 5
 (!%!) :: [a] -> Int -> Maybe a
 (!%!) xs i =  liftM (\ys -> ys !! (i `tomAbs` n)) xs'
   where 
     xs' = guard (not (null xs)) >> Just xs
     n = length xs
+    tomAbs :: (Integral a, Num a) => a -> a -> a
+    tomAbs = (abs .) . mod
 
 
 inQuotes :: String -> Bool

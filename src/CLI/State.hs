@@ -97,7 +97,7 @@ genPathTries debug = do
   let removeExe s = take (length s - 4) s
       files' = map removeExe $ filter (\x -> x =~ "(.+)\\.exe$") files
 
-  debug ?-> do
+  when debug $ do
     logLine "-----------"
     logLine "Generating path tries"
     logLine "-----------"
@@ -143,23 +143,22 @@ loadState debug verbose = do
   filepath <- storePath
   let readPath = filepath ++ stateFilename
 
-  verbose ?->
-    (putStr $ "Reading state from: \"" ++ readPath ++ "\"...")
+  when verbose $
+    putStr $ "Reading state from: \"" ++ readPath ++ "\"..."
 
-  not <$> doesFileExist readPath
-    ?~> do
-      verbose ?-> putStr "\nCreating file..."
+  whenM (not <$> doesFileExist readPath) $ do
+      when verbose $ putStr "\nCreating file..."
       createDirectoryIfMissing True filepath
       handle <- openFile readPath ReadWriteMode
       hClose handle
-      verbose ?-> putStrLn "Done"
+      when verbose $ putStrLn "Done"
 
   d <- BS.readFile $ readPath
   let d' = decode d
   case d' of
     (Right (SerializableState h l logs)) -> do
-      verbose ?-> putStrLn "Success!"
+      when verbose $ putStrLn "Success!"
       cleanState debug verbose h l logs
     (Left err) -> do
-      verbose ?-> putStrLn "Failed! Creating blank state"
+      when verbose $ putStrLn "Failed! Creating blank state"
       cleanState debug verbose [] Map.empty []

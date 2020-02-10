@@ -15,6 +15,7 @@ import CLI.SearchMode (searchDraw)
 import Search
 
 import System.Console.ANSI
+import Control.Monad (when)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
 import Data.List.Zipper (Zipper (..), toList)
@@ -70,13 +71,12 @@ shellUpdate command = do
   -- If we have performed some non-trivial action
   -- save the state
   let newCommands = getNewCommands commandResult
-  length newCommands > 0
-    ?-> do
+  when (length newCommands > 0) $ do
       addToHistory newCommands
       saveState'
 
   -- log the completions
-  getDebug s' ?-> return ()
+  -- getDebug s' ?-> return ()
     --cd <- liftIO $ getCurrentDirectory
     --liftIO $ logCompletions (toList $ getPrompt s') cd completionResult
 

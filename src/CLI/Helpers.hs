@@ -12,32 +12,15 @@ import Data.List.Zipper
 
 import System.Environment
 
--- f Only if x
-infix 0 <~?
-(<~?) :: (Monad m) => m a -> m Bool -> m ()
-f <~? x = x >>= (\y -> if y then f >> return () else return ())
-
--- f Only if x
-infix 0 <-?
-(<-?) :: (Applicative f) => f () -> Bool -> f ()
-f <-? x = if x then f else pure ()
-
--- if x then f
-infix 0 ?~>
-(?~>) :: (Monad m) => m Bool -> m a -> m ()
-(?~>) = flip (<~?)
-
--- fi x then f
-infix 0 ?->
-(?->) :: (Applicative f) => Bool -> f() -> f ()
-(?->) = flip (<-?)
+whenM :: (Monad m) => m Bool -> m a -> m ()
+whenM pm f = pm >>= (\p -> when p $ f >> return ())
 
 (+^+) :: Monad m => m [a] -> m [a] -> m [a]
 (+^+) = liftM2 (++)
 
 -- Run some arbitrary IO if we are running in debug mode
 ifDebug :: IO () -> FishyMonad ()
-ifDebug f = do (liftIO f) <~? getDebug <$> get
+ifDebug f = whenM (getDebug <$> get) $ liftIO f
 
 storePath :: IO FilePath
 storePath = do

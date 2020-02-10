@@ -98,8 +98,7 @@ drawCompletion lastHeight preprompt p@(Zip pl pr) completion color = do
   let thisLength = length preprompt + max (length s) (length completion)
       thisHeight = 1 + (thisLength `div` ww)
 
-  lastHeight > thisHeight
-    ?-> cursorDown 1
+  when (lastHeight > thisHeight) $ cursorDown 1
  
   -- Draw preprompt and user input
   putStr drawstr

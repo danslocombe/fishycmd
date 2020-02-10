@@ -50,7 +50,7 @@ execCommand c = case splitOn " " c of
         (_, _, _, phandle) <- liftIO $ createProcess x
 
         -- Should we block for the result?
-        (liftIO $ blockForCommand c) ?~> do
+        whenM (liftIO $ blockForCommand c) $ do
           -- Install an interrupt handler that kills the child process
           liftIO $ installHandler sigINT 
             (\sig -> do {
