@@ -82,7 +82,10 @@ main = do
   return ()
 
 entryString :: String
-entryString = "Fishy v0.4.03     >°))))<"
+entryString = "Fishy v0.4.04     >°))))<"
+
+-- Release notes
+-- 0.4.04: fix parsing of xap aliases
 
 entryString2 :: String
 entryString2 = "\n\

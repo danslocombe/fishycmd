@@ -71,12 +71,15 @@ parseAliasDef :: Stream s m Char => ParsecT s u m Alias
 parseAliasDef = do
   alias <- many1 $ noneOf " "
   spaces
-  string "="
+  optional $ try $ string "="
   a2 <- many parseAliasElem
   return $ Alias alias a2
 
 parseAllAliasDefs :: Stream s m Char => ParsecT s u m [Alias]
-parseAllAliasDefs = many $ do {x <- parseAliasDef; optional $ try newline; return x} 
+parseAllAliasDefs = many $ do
+  x <- parseAliasDef
+  optional $ try newline
+  return x
 
 applyAlias :: Alias -> String -> Maybe String
 applyAlias (Alias alias rewrite) c = do
