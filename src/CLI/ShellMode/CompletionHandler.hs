@@ -57,29 +57,29 @@ getCurrentCompletion handler prefix currentDir = case length splitS of
   -- Don't do anything for empty string
   0 -> singletonResult
   -- For a single 'word' use all tries
-  1 -> getCurrentCompletionInner handler prefix currentDir allCompleters
+  1 -> getCurrentCompletionInner handler prefix currentDir allCompleterNames
   -- For multiple 'words'
   _ -> let (CompletionHandlerResult hs _ ) 
-             = getCurrentCompletionInner handler prefix currentDir historyCompleters
+             = getCurrentCompletionInner handler prefix currentDir historyCompleterNames
            (CompletionHandlerResult fs _ )
-             = getCurrentCompletionInner handler endPrefix currentDir fileCompleters
+             = getCurrentCompletionInner handler endPrefix currentDir fileCompleterNames
            -- Don't complete on files if in quotes
            fs' = if inQuotes prefix then [] else fs
            fs'' = fmap (\(Completion c s) -> Completion (prefix++(drop n c)) s) fs'
         in CompletionHandlerResult (hs ++ fs'') Red
 
   where
-    allCompleters = 
+    allCompleterNames = 
       [ NameLocalHistoryCompleter
       , NameFileCompleter
       , NameGlobalHistoryCompleter
       , NamePathCompleter ]
 
-    historyCompleters =
+    historyCompleterNames =
       [ NameLocalHistoryCompleter
       , NameGlobalHistoryCompleter ]
 
-    fileCompleters =
+    fileCompleterNames =
       [ NameFileCompleter
       , NamePathCompleter ]
 
@@ -115,7 +115,7 @@ getCurrentCompletionInner
     filterResults cr@(FishyCompleterResult cs _)
       = guard (hasDesiredName cr) >> Just cs
     hasDesiredName :: FishyCompleterResult -> Bool
-    hasDesiredName (FishyCompleterResult cr name)
+    hasDesiredName (FishyCompleterResult _ name)
       = elem name queryTargets
 
     -- Select only results from completers we care about

@@ -18,17 +18,11 @@ import Complete.FileCompleter
 import Complete.String
 import Complete.Trie
 import Complete.Types
-import CLI.State
-import CLI.Types
 
 import Prelude hiding (lookup)
-import Data.Function (on)
-import Data.List.Zipper
 import Data.List.Split
-import Data.List (maximumBy)
 import System.Console.ANSI (Color(Red))
 import Data.Maybe
-import qualified Data.Map.Lazy as Map
 
 toCompletion :: [CharWeight] -> Completion Char
 toCompletion cw = Completion (cwToString cw) (lastOrZero $ getWeight <$> cw)
@@ -69,18 +63,18 @@ splitCompletion p c = p ++ compl
 
 -- Split a string on another string and add the split string to the end
 splitOnAdd :: String -> String -> [String]
-splitOnAdd split s = case splitOn split s of
+splitOnAdd splitS s = case splitOn splitS s of
   []  -> []
   [x] -> [x]
-  xs  -> take (n-1) (map (++split) xs) ++ [last xs]
+  xs  -> take (n-1) (map (++splitS) xs) ++ [last xs]
     where n = length xs
 
 -- Split a string on another string and add the split string to the beginning
 splitOnAddStart :: String -> String -> [String]
-splitOnAddStart split s = case splitOn split s of
+splitOnAddStart splitS s = case splitOn splitS s of
   []  -> []
   [x] -> [x]
-  (x:xs)  -> x : map (split++) xs
+  (x:xs)  -> x : map (splitS++) xs
 
 -- Given a list of completers and a prefix produce a list of results
 -- TODO : Use lenses
@@ -93,7 +87,7 @@ allCompletions cs p = map (filterResults . applyComplete) cs
     filterResults (FishyCompleterResult (CompleterResult rs c) name) 
       = FishyCompleterResult 
           (CompleterResult 
-            (filter (\(Completion c _) -> length c >= length p) rs) c) name
+            (filter (\(Completion x _) -> length x >= length p) rs) c) name
 
 
 

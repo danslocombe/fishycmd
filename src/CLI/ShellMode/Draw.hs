@@ -1,14 +1,11 @@
 module CLI.ShellMode.Draw (prePrompt, drawCompletion) where
 
-import Complete
 import Complete.String
-import CLI.State
 import CLI.Helpers
 
 import Control.Monad
 import Data.List.Zipper
 import System.Directory
-import System.Environment
 import System.Console.ANSI
 import System.Console.Terminal.Size
 import System.IO
@@ -24,6 +21,7 @@ prePrompt = do
         Nothing -> ">°))))<  "
   return $ pre ++ ">>> "
 
+promptTargetLength :: Int
 promptTargetLength = 40
 
 removeVowels :: String -> Maybe String
@@ -74,15 +72,11 @@ generatePrePromptSafe p = do
 
   return $ base ++ "\\" ++ cd
 
-drawCompletion' :: Int -> [(String, Color)] -> IO ()
-drawCompletion' = undefined
-
 drawCompletion :: Int -> String -> Zipper Char -> String -> Color -> IO ()
 drawCompletion lastHeight preprompt p@(Zip pl pr) completion color = do
   let s :: String
       s = toList p
   Just (Window _ ww) <- size
-  currentDir <- getCurrentDirectory
 
   let drawstr = preprompt ++ s
 
@@ -104,7 +98,6 @@ drawCompletion lastHeight preprompt p@(Zip pl pr) completion color = do
   putStr drawstr
 
   let completionOnly = drop (length s) completion
-      completionHeight = length drawstr + length completionOnly
 
   setSGR [SetColor Foreground Vivid color]
   putStr completionOnly

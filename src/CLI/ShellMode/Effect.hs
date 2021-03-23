@@ -2,18 +2,18 @@
 {-# LANGUAGE RankNTypes #-}
 module CLI.ShellMode.Effect where
 
-import Complete.String
 import Complete
+import Complete.String()
+
 import CLI.State
 import CLI.Types
 import CLI.Helpers
 import CLI.ShellMode.CompletionHandler
 import CLI.ShellMode.FishyCommand
-import CLI.ShellMode.Prompt
 
 import System.Signal
 import Data.Maybe
-import Data.List (nub, lookup)
+import Data.List (nub)
 import Data.Char (isSpace)
 import Data.List.Split
 import System.Process
@@ -23,7 +23,6 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
 import System.IO
 import Data.List.Zipper hiding (insert)
-import qualified Data.Map.Lazy as Map
 
 import Corext.AliasCompleter
 
@@ -34,13 +33,13 @@ execCommand :: String -> FishyMonad Bool
 execCommand "" = liftIO $ putStr "\n" >> return False
 execCommand c = case splitOn " " c of 
   -- Extract first 'word'
-  (x:xs) -> do
+  (commandWord:commandWords) -> do
     liftIO $ putStr "\n"
     -- Try and match against a fishy command, otherwise act normal
-    let fishy = Prelude.lookup x fishyCommandMap
+    let fishy = Prelude.lookup commandWord fishyCommandMap
     ret <- case fishy of
       -- Run fishycommand
-      Just fishyCmd -> runFishy xs fishyCmd
+      Just fishyCmd -> runFishy commandWords fishyCmd
       Nothing -> do 
 
         -- Setup flags for process
@@ -153,7 +152,7 @@ processCommand aliases handlerResult ci = do
 
     -- Execute some other command
     Execute command -> do
-      exitcode <- liftIO $ system command
+      _exitcode <- liftIO $ system command
       defaultReturn
 
     -- Some inputs (up, down, etc) are represented by two characters
@@ -210,12 +209,15 @@ forwardHistory = do
 
 
 -- This is incredibly hacky
+-- We have a whitelist of file extensions where running will execute in the background
+-- Main use for this is running "Example.csproj" to open in visual studio
 blockForCommand :: String -> IO Bool
 blockForCommand c = do
   exists <- doesFileExist c
   let hasAsyncExt = (maybe False (`elem` asyncExtensions) (extension c))
   return $ not $ exists && hasAsyncExt
 
+asyncExtensions :: [String]
 asyncExtensions = ["csproj", "sln", "txt", "cs", "bond", "ini", "log"]
 
 extension :: String -> Maybe String

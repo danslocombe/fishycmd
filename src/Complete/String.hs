@@ -16,9 +16,6 @@ import Complete.Trie
 import Prelude hiding (lookup)
 import GHC.Generics
 import Data.Serialize
-import Safe
-import System.Directory
-import System.Environment
     
 type StringTrie = Trie CharWeight
 data CharWeight = CharWeight 
@@ -56,11 +53,6 @@ stripDoubleBackslash (x:xs) = x : stripDoubleBackslash xs
 parseFilename :: String -> String
 parseFilename = stripQuotes . stripDoubleBackslash
 
-escapeSpace :: String -> String
-escapeSpace = concatMap (\x -> case x of 
-    ' ' -> "\\ "
-    y -> [y])
-
 -- --- --- -- -- -  - - -- - --- -- --- --- -- 
 
 -- Build a standard trie for strings
@@ -72,6 +64,3 @@ cwToChar (CharWeight c _) = c
 
 cwToString :: [CharWeight] -> String
 cwToString = fmap cwToChar
-
-buildFileTries :: String -> IO [Trie CharWeight]
-buildFileTries dir = buildTries <$> (listDirectory =<< getCurrentDirectory)

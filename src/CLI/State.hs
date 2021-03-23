@@ -12,27 +12,20 @@ import Complete.FileCompleter
 import CLI.Types
 import CLI.Helpers
 import Corext.AliasCompleter
-import Search
 
 import Prelude
 
-import GHC.Generics
 import Data.Serialize
-import Data.Either
-import Data.Maybe (listToMaybe, catMaybes)
 import Data.List.Zipper
 import System.Directory
 import System.Environment
 import System.IO
 import Data.List.Split
 import Control.Monad
-import Control.Monad.Trans.Class
 import Text.Regex.Posix ((=~))
 import System.Console.ANSI
-import qualified Control.Monad.Trans.State.Strict as ST
 import qualified Data.Map.Strict as Map
 import qualified Data.ByteString as BS
-import Data.Maybe (maybeToList)
   
 -- Initialize a new 'clean' fishy state
 cleanState :: Bool 
@@ -113,12 +106,6 @@ genPathTries debug = do
 stateFilename :: String
 stateFilename = "trie.file"
 
--- Unused
-printEnvironment :: IO ()
-printEnvironment = do
-  env <- getEnvironment
-  (mapM_ (\(x, y) -> putStrLn(x ++ "  " ++ y)) env)
-
 serializableFromFishy :: FishyState -> SerializableState
 serializableFromFishy fs =
   let ch = getCompletionHandler fs
@@ -132,9 +119,7 @@ serializableFromFishy fs =
 saveState :: FishyState -> IO ()
 saveState s = do
   filepath <- storePath
-  let verbose = getVerbose s
-      writePath = filepath ++ stateFilename
-      sstate = serializableFromFishy s
+  let sstate = serializableFromFishy s
   BS.writeFile (filepath ++ stateFilename) $ encode sstate
 
 -- Load state by deserializing history tries
@@ -160,5 +145,5 @@ loadState debug verbose = do
       when verbose $ putStrLn "Success!"
       cleanState debug verbose h l logs
     (Left err) -> do
-      when verbose $ putStrLn "Failed! Creating blank state"
+      when verbose $ putStrLn $ "Failed! Creating blank state" ++ err
       cleanState debug verbose [] Map.empty []

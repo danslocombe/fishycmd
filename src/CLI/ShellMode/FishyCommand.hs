@@ -6,20 +6,17 @@ import CLI.Types
 import CLI.State
 
 import Text.Parsec
-import Text.Parsec.Char
-import Control.Monad.Trans.State.Strict
-import Control.Monad.Trans.Class
 import System.Directory
 import Data.List (intersperse, union)
 import System.Environment
 import Control.Monad.IO.Class
-import Control.Monad.RWS.Class
 
 -- We have an idea of 'fishy' commands that hold side effects
 -- these are handled by the shell rather than external calls
 
 data FishyCommand = CD | EXIT
 
+fishyCommandMap :: [(String, FishyCommand)]
 fishyCommandMap = 
   [ ("cd", CD)
   , ("exit", EXIT)
@@ -49,7 +46,6 @@ fishyCD rawArg = do
       if exists
       then do
         liftIO $ setCurrentDirectory arg'
-        dir <- liftIO $ getCurrentDirectory
         return ()
       else liftIO $ putStrLn "Error: fishy directory"
     Nothing -> liftIO $ putStrLn "Error: could not parse directory"
