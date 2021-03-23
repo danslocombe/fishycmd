@@ -77,7 +77,6 @@ processCommand aliases handlerResult ci = do
   initialLocation <- liftIO $ getCurrentDirectory
   let s = toList $ getPrompt state
       (Zip promptL promptR) = getPrompt state
-      historyLogs = getHistoryLogs state
       defaultReturn = return $ CommandProcessResult [] initialLocation True False
       (Completion completion _, _) = firstCompletionResult handlerResult
 
@@ -101,7 +100,6 @@ processCommand aliases handlerResult ci = do
 
     -- Run what is entered by user
     Run -> do
-      dirToInsert <- liftIO $ getCurrentDirectory
       let trim :: String -> String
           trim = f . f
             where f = reverse . dropWhile isSpace
@@ -118,6 +116,7 @@ processCommand aliases handlerResult ci = do
       liftIO clearFromCursorToLineEnd
       put state 
         { getPrompt = Zip (reverse completion) []
+        , getHistoryStash = Nothing
         , getControlPrepped = False}
       defaultReturn
       
@@ -141,10 +140,12 @@ processCommand aliases handlerResult ci = do
           -- Cycle to next completion
           state { getCompletionHandler = handler'
                 , getPrompt = Zip (reverse compNext) promptR
+                , getHistoryStash = Nothing
                 , getControlPrepped = False }
         else
           -- Complete to partial
           state { getPrompt = Zip (reverse compNowSplit) promptR
+                , getHistoryStash = Nothing
                 , getControlPrepped = False }
       liftIO $ setCursorColumn 0
       liftIO clearFromCursorToLineEnd
@@ -183,29 +184,31 @@ backHistory :: FishyMonad ()
 backHistory = do
     state <- get
     let s = toList $ getPrompt state
+        stash = maybe "" id $ getHistoryStash state
         history = getHistoryLogs state
         (history', mText) = popBotZipper history
         (text, history'') = case mText of
-          Just newText -> (newText, case s of
+          Just newText -> (newText, case stash of
             "" -> history'
-            _  -> pushTopZipper s history')
-          Nothing      -> (s, history')
+            _  -> pushTopZipper stash history')
+          Nothing      -> (stash, history')
         prompt = Zip (reverse text) []
-    put state { getHistoryLogs = history'', getPrompt = prompt }
+    put state { getHistoryLogs = history'', getPrompt = prompt, getHistoryStash = Just text }
 
 forwardHistory :: FishyMonad ()
 forwardHistory = do
     state <- get
     let s = toList $ getPrompt state
+        stash = maybe "" id $ getHistoryStash state
         history = getHistoryLogs state
         (history', mText) = popTopZipper history
         (text, history'') = case mText of
-          Just newText -> (newText, case s of
+          Just newText -> (newText, case stash of
             "" -> history'
-            _  -> pushBotZipper s history')
-          Nothing      -> (s, history')
+            _  -> pushBotZipper stash history')
+          Nothing      -> (stash, history')
         prompt = Zip (reverse text) []
-    put state { getHistoryLogs = history'', getPrompt = prompt }
+    put state { getHistoryLogs = history'', getPrompt = prompt, getHistoryStash = Just text }
 
 
 -- This is incredibly hacky

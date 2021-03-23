@@ -20,6 +20,7 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
 import Data.List.Zipper (Zipper (..), toList)
 import Data.List (nub)
+import Data.Maybe (maybeToList)
 import System.Console.Terminal.Size
 
 import Complete
@@ -119,15 +120,21 @@ saveState' = do
 addToHistory :: [String] -> FishyMonad ()
 addToHistory newCommands = do
   state <- get
+  ifDebug $ putStrLn $ "\nAdding to history: " ++ show newCommands
+  ifDebug $ putStrLn $ "\nCurrent history: " ++ (show $ getHistoryLogs state)
   let (Zip historyL historyR) = getHistoryLogs state
       -- hi = getHistoryIndex state
+      stashCommands = maybeToList $ getHistoryStash state
       historyL' = if (all whitespace newCommands) 
-        then reverse historyR ++ historyL
+        then reverse historyR ++ stashCommands ++ historyL
         else case historyL of 
-          (x:_) -> (filter (/= x) newCommands) ++ (reverse historyR) ++ historyL
-          _ -> nub newCommands ++ reverse historyR
+          (x:_) -> (filter (/= x) newCommands) ++ (reverse historyR) ++ stashCommands ++ historyL
+          _ -> nub newCommands ++ reverse historyR ++ stashCommands
+
+  ifDebug $ putStrLn $ "\nNew commands: " ++ (show historyL') ++ " || " ++ (show historyR)
   put state
-    { getHistoryLogs = Zip (historyL' ++ historyR) []
+    { getHistoryLogs = Zip historyL' []
+    , getHistoryStash = Nothing
     --, getHistoryIndex = foldl hiNewCommand hi newCommands
     }
 

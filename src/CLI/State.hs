@@ -58,6 +58,7 @@ cleanState debug verbose global local logs = do
     , getCurrentDir            = cd
     , getDebug                 = debug
     , getVerbose               = verbose
+    , getHistoryStash          = Nothing
     , getHistoryLogs           = (Zip (reverse logs) [])
     , getHistoryIndex          = Nothing
     , getAliases               = aliases'

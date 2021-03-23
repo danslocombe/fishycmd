@@ -61,6 +61,7 @@ data FishyState = FishyState
   , getCurrentDir            :: FilePath
   , getDebug                 :: Bool
   , getVerbose               :: Bool
+  , getHistoryStash          :: Maybe String
   , getHistoryLogs           :: Zipper String
   , getHistoryIndex          :: Maybe HistoryIndex
   , getAliases               :: [Alias]
