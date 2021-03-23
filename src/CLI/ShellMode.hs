@@ -44,7 +44,7 @@ shellUpdate command = do
           , getCurrentDir = getCommandLocation commandResult }
           )
 
-  whenM (return $ getRebuildCompleters commandResult) $ do
+  when (getRebuildCompleters commandResult) $ do
       s <- get
       ch' <- liftIO $ updateCompletionHandler 
         (getCompletionHandler s)
@@ -56,7 +56,6 @@ shellUpdate command = do
 
       let s' = s {getCompletionHandler = ch', getCachedCompletions = completionResult}
       put s'
-      return ch'
 
   -- If we have performed some non-trivial action
   -- save the state
@@ -123,19 +122,18 @@ addToHistory newCommands = do
   ifDebug $ putStrLn $ "\nAdding to history: " ++ show newCommands
   ifDebug $ putStrLn $ "\nCurrent history: " ++ (show $ getHistoryLogs state)
   let (Zip historyL historyR) = getHistoryLogs state
-      -- hi = getHistoryIndex state
       stashCommands = maybeToList $ getHistoryStash state
+      flattenedHistory = reverse historyR ++ stashCommands ++ historyL
       historyL' = if (all whitespace newCommands) 
-        then reverse historyR ++ stashCommands ++ historyL
+        then flattenedHistory
         else case historyL of 
-          (x:_) -> (filter (/= x) newCommands) ++ (reverse historyR) ++ stashCommands ++ historyL
-          _ -> nub newCommands ++ reverse historyR ++ stashCommands
+          (x:_) -> (filter (/= x) newCommands) ++ flattenedHistory
+          _ -> nub newCommands ++ flattenedHistory
 
   ifDebug $ putStrLn $ "\nNew commands: " ++ (show historyL') ++ " || " ++ (show historyR)
   put state
     { getHistoryLogs = Zip historyL' []
     , getHistoryStash = Nothing
-    --, getHistoryIndex = foldl hiNewCommand hi newCommands
     }
 
 whitespace :: String -> Bool

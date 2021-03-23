@@ -181,35 +181,26 @@ processCommand aliases handlerResult ci = do
 
 -- TODO factor out some of following common in both functions
 backHistory :: FishyMonad ()
-backHistory = do
-    state <- get
-    let s = toList $ getPrompt state
-        stash = maybe "" id $ getHistoryStash state
-        history = getHistoryLogs state
-        (history', mText) = popBotZipper history
-        (text, history'') = case mText of
-          Just newText -> (newText, case stash of
-            "" -> history'
-            _  -> pushTopZipper stash history')
-          Nothing      -> (stash, history')
-        prompt = Zip (reverse text) []
-    put state { getHistoryLogs = history'', getPrompt = prompt, getHistoryStash = Just text }
+backHistory = changeHistory pushTopZipper popBotZipper
 
 forwardHistory :: FishyMonad ()
-forwardHistory = do
+forwardHistory = changeHistory pushBotZipper popTopZipper
+
+type PushNewHistory = String -> Zipper String -> Zipper String
+type PopHistory = Zipper String -> (Zipper String, Maybe String)
+changeHistory :: PushNewHistory -> PopHistory -> FishyMonad ()
+changeHistory modifyHistory getFromHistory = do
     state <- get
-    let s = toList $ getPrompt state
-        stash = maybe "" id $ getHistoryStash state
+    let stash = maybe "" id $ getHistoryStash state
         history = getHistoryLogs state
-        (history', mText) = popTopZipper history
+        (history', mText) = getFromHistory history
         (text, history'') = case mText of
           Just newText -> (newText, case stash of
             "" -> history'
-            _  -> pushBotZipper stash history')
+            _  -> modifyHistory stash history')
           Nothing      -> (stash, history')
         prompt = Zip (reverse text) []
     put state { getHistoryLogs = history'', getPrompt = prompt, getHistoryStash = Just text }
-
 
 -- This is incredibly hacky
 -- We have a whitelist of file extensions where running will execute in the background
