@@ -25,9 +25,11 @@ type StringCompletion = Completion Char
 
 type StringCompleterResult = CompleterResult Char
 
-data FishyCompleterResult = FishyCompleterResult StringCompleterResult CompleterName
+data FishyCompleterResult = FishyCompleterResult StringCompleterResult CompleterName 
+  deriving Show
 
 data CompleterName = NameLocalHistoryCompleter
+                   | NameGitCompleter
                    | NameFileCompleter
                    | NameGlobalHistoryCompleter
                    | NamePathCompleter deriving (Eq, Show)

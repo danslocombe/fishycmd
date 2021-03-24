@@ -9,6 +9,7 @@ module CLI.State
 
 import Complete.String
 import Complete.FileCompleter
+import Complete.Git
 import CLI.Types
 import CLI.Helpers
 import Corext.AliasCompleter
@@ -43,6 +44,7 @@ cleanState debug verbose global local logs = do
   -- putStrLn $ unlines $ show <$> aliases'
   handler <- (CompletionHandler global local
     <$> genPathyTries debug
+    <*> loadGitCompletionHandler
     <*> createFileCompleter (FileCompleter "" []) ""
     <*> return 0)
 

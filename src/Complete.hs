@@ -18,6 +18,7 @@ import Complete.FileCompleter
 import Complete.String
 import Complete.Trie
 import Complete.Types
+import Complete.Git
 
 import Prelude hiding (lookup)
 import Data.List.Split
@@ -44,6 +45,19 @@ instance Completer FileCompleter where
       -- cs :: [String]
       cs = (\x -> Completion x 1) <$> filter (Complete.FileCompleter.startsWith prefix) fs
 
+
+instance Completer GitCompletionHandler where
+  type CompleteType GitCompletionHandler = Char
+  complete git p = if isGitCommand p
+      then case shouldCompleteBranch ps of
+        Just (p0, p1) -> let CompleterResult xs _ = complete (getBranchTries git) p1 in
+          CompleterResult (prepend p0 <$> xs) Red
+        Nothing -> CompleterResult [] Red
+      else CompleterResult [] Red
+      where
+        ps = splitOn " " p
+        prepend :: String -> Completion Char -> Completion Char
+        prepend p0 (Completion x _) = Completion (p0 ++ x) 1
 
 -- Split completion for partial completion
 splitCompletion :: String -> String -> String

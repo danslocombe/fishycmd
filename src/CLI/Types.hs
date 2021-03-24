@@ -8,6 +8,7 @@ module CLI.Types where
 
 import Complete.String
 import Complete.Types
+import Complete.Git
 import Complete.FileCompleter
 import Search
 
@@ -18,7 +19,6 @@ import System.Console.ANSI
 import qualified Data.Map.Lazy as Map
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
-
 
 type FishyMonad a = forall m. (MonadState FishyState m, MonadIO m) => m a
 
@@ -34,6 +34,7 @@ data CompletionHandler = CompletionHandler
   { getHistoryTries          :: [StringTrie]
   , getLocalizedHistoryTries :: Map.Map FilePath [StringTrie]
   , getPathTries             :: [StringTrie]
+  , getGitCompletionHandler  :: GitCompletionHandler
   , getFileCompleter         :: FileCompleter
   , getCycle                 :: Int
   } deriving (Show)

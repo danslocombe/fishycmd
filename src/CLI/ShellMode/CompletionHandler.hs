@@ -6,6 +6,7 @@ import Complete.String
 import Complete.Trie (insertTrie)
 import Complete.Types
 import CLI.Types
+import Debug.Trace
 
 import Control.Monad
 import Data.Maybe
@@ -17,7 +18,7 @@ import System.Directory
 
 -- Try get first completion or give empty results
 firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
-firstCompletionResult (CompletionHandlerResult xs c) =
+firstCompletionResult (CompletionHandlerResult xs _color) =
   (fromMaybe (Completion [] 0) $ listToMaybe xs, Red)
 
 -- Get (n mod k)th completion where k is the number of completions
@@ -63,14 +64,17 @@ getCurrentCompletion handler prefix currentDir = case length splitS of
              = getCurrentCompletionInner handler prefix currentDir historyCompleterNames
            (CompletionHandlerResult fs _ )
              = getCurrentCompletionInner handler endPrefix currentDir fileCompleterNames
+           (CompletionHandlerResult gs _ )
+             = getCurrentCompletionInner handler prefix currentDir gitCompleterNames
            -- Don't complete on files if in quotes
            fs' = if inQuotes prefix then [] else fs
            fs'' = fmap (\(Completion c s) -> Completion (prefix++(drop n c)) s) fs'
-        in CompletionHandlerResult (hs ++ fs'') Red
+        in CompletionHandlerResult (gs ++ hs ++ fs'') Red
 
   where
     allCompleterNames = 
       [ NameLocalHistoryCompleter
+      , NameGitCompleter
       , NameFileCompleter
       , NameGlobalHistoryCompleter
       , NamePathCompleter ]
@@ -82,6 +86,9 @@ getCurrentCompletion handler prefix currentDir = case length splitS of
     fileCompleterNames =
       [ NameFileCompleter
       , NamePathCompleter ]
+
+    gitCompleterNames =
+      [ NameGitCompleter ]
 
     splitS :: [String]
     splitS = splitOn " " prefix
@@ -110,6 +117,9 @@ getCurrentCompletionInner
     -- Get completions
     rs = allCompletions completers prefix
 
+    --rs' = trace (show rs) rs
+    rs' = rs
+
     -- Functions for filtering
     filterResults :: FishyCompleterResult -> Maybe StringCompleterResult
     filterResults cr@(FishyCompleterResult cs _)
@@ -120,7 +130,7 @@ getCurrentCompletionInner
 
     -- Select only results from completers we care about
     res :: [StringCompleterResult]
-    res = (catMaybes (map filterResults rs))
+    res = (catMaybes (map filterResults rs'))
 
     -- Add red color
     toHandlerResult :: [StringCompleterResult] -> CompletionHandlerResult
@@ -131,10 +141,12 @@ getCurrentCompletionInner
 
 allCompleters :: CompletionHandler -> String -> [StringCompleter]
 allCompleters handler currentDir = 
-  [ StringCompleter local                      NameLocalHistoryCompleter
+  [ StringCompleter (getGitCompletionHandler handler) NameGitCompleter
+  , StringCompleter local                      NameLocalHistoryCompleter
   , StringCompleter (getFileCompleter handler) NameFileCompleter
+  , StringCompleter (getPathTries     handler) NamePathCompleter
   , StringCompleter (getHistoryTries  handler) NameGlobalHistoryCompleter
-  , StringCompleter (getPathTries     handler) NamePathCompleter]
+  ]
   where local = Map.findWithDefault [] currentDir $ getLocalizedHistoryTries handler
 
 -- Again, should use lenses
