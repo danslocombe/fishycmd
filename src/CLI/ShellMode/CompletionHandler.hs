@@ -3,6 +3,7 @@ module CLI.ShellMode.CompletionHandler where
 import Complete
 import Complete.FileCompleter
 import Complete.String
+import Complete.Git
 import Complete.Trie (insertTrie)
 import Complete.Types
 import CLI.Types
@@ -46,10 +47,18 @@ updateCompletionHandler old prompt dir newCommands = do
       localTrie = Map.findWithDefault [] dir localTriesOld
       localTrie' = addToTrie newCommands localTrie
       localTriesNew = Map.insert dir localTrie' localTriesOld
+
+  -- For now rebuild git completions whenever a command is run
+  let shouldRebuildGit = any (const True) newCommands
+  gitCompletionHandler' <- if shouldRebuildGit 
+    then loadGitCompletionHandler
+    else return $ getGitCompletionHandler old
+
   return old 
     { getFileCompleter         = fileCompleter
     , getHistoryTries          = global 
     , getLocalizedHistoryTries = localTriesNew
+    , getGitCompletionHandler  = gitCompletionHandler'
     -- We leave path completions alone for now
   }
 
@@ -141,11 +150,11 @@ getCurrentCompletionInner
 
 allCompleters :: CompletionHandler -> String -> [StringCompleter]
 allCompleters handler currentDir = 
-  [ StringCompleter (getGitCompletionHandler handler) NameGitCompleter
-  , StringCompleter local                      NameLocalHistoryCompleter
+  [ StringCompleter local                      NameLocalHistoryCompleter
   , StringCompleter (getFileCompleter handler) NameFileCompleter
   , StringCompleter (getPathTries     handler) NamePathCompleter
   , StringCompleter (getHistoryTries  handler) NameGlobalHistoryCompleter
+  , StringCompleter (getGitCompletionHandler handler) NameGitCompleter
   ]
   where local = Map.findWithDefault [] currentDir $ getLocalizedHistoryTries handler
 
