@@ -7,9 +7,11 @@ import Complete.Types()
 
 import System.Process
 import Data.List.Split (splitOn)
-import Data.List (intersperse)
+import Data.List (intersperse, isInfixOf)
 import Data.Maybe (catMaybes)
 import System.Directory
+
+import Corext.Helpers
 
 data GitCompletionHandler = GitCompletionHandler
   { getBranchTries :: [StringTrie]
@@ -18,7 +20,9 @@ data GitCompletionHandler = GitCompletionHandler
 
 loadGitCompletionHandler :: IO GitCompletionHandler
 loadGitCompletionHandler = do
-  inRepo <- inGitRepo
+  --inRepo <- inGitRepo
+  -- Tmp disable until performance improves
+  let inRepo = False
   if inRepo
     then createGitCompletionHandler
     else return GitCompletionHandler
@@ -30,12 +34,19 @@ createGitCompletionHandler :: IO GitCompletionHandler
 createGitCompletionHandler = do
     -- Setup flags for process
 
+    corext <- inCorext
+
     -- immitating fish
     -- iterate over refs instead of calling "git branch"
     -- faster and avoids localised "detached HEAD" messages.
     --putStrLn "Rebuilding git completion handler"
-    let refCommand = "git for-each-ref --format='%(refname)' refs/heads/ refs/remotes/"
-    refs <- readCreateProcess (shell refCommand) ""
+    let refCommand = "git for-each-ref --format='%(refname)' refs/heads/"
+        iterateRemote = "refs/remotes/"
+        refCommand' = if corext
+          then refCommand
+          else refCommand ++ " " ++ iterateRemote
+
+    refs <- readCreateProcess (shell refCommand') ""
 
     let additionalCompletions = ["HEAD"]
     let input = additionalCompletions ++ (catMaybes $ parseRef <$> splitOn "\n" refs)
@@ -53,6 +64,15 @@ rebuildIfNeeded git@GitCompletionHandler{..} s = if not getInvalidated && isGitC
 
 invalidate :: GitCompletionHandler -> GitCompletionHandler
 invalidate g = g { getInvalidated = True }
+
+shouldInvalidate :: Bool -> String -> Bool
+shouldInvalidate corext c = invalidatedByCD || invalidatedByGit
+  where
+    -- We assume in corext you will stay within the same repo
+    invalidatedByCD = (not corext) && (startsWithThenWhitespace "cd" c)
+    invalidateCommands = ["pull", "fetch", "checkout -b"]
+    invalidatedByGit = isGitCommand c && any (\x -> isInfixOf x c) invalidateCommands
+
 
 inGitRepo :: IO Bool
 inGitRepo = do

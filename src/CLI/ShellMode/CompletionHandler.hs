@@ -17,6 +17,8 @@ import qualified Data.Map.Lazy as Map
 import System.Console.ANSI
 import System.Directory
 
+import Corext.Helpers
+
 -- Try get first completion or give empty results
 firstCompletionResult :: CompletionHandlerResult -> (Completion Char, Color)
 firstCompletionResult (CompletionHandlerResult xs _color) =
@@ -49,7 +51,8 @@ updateCompletionHandler old prompt dir newCommands = do
       localTriesNew = Map.insert dir localTrie' localTriesOld
 
   -- For now rebuild git completions whenever a command is run
-  let shouldRebuildGit = any (const True) newCommands
+  corext <- inCorext
+  let shouldRebuildGit = any (shouldInvalidate corext) newCommands
   gitCompletionHandler' <- if shouldRebuildGit 
     then loadGitCompletionHandler
     else return $ getGitCompletionHandler old

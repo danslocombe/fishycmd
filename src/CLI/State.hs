@@ -13,6 +13,7 @@ import Complete.Git
 import CLI.Types
 import CLI.Helpers
 import Corext.AliasCompleter
+import Corext.Helpers
 
 import Prelude
 

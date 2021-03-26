@@ -10,17 +10,12 @@ import Data.List (intersperse)
 import System.Environment
 import CLI.Helpers
 import CLI.Types
+import Corext.Helpers
 
 import Text.Parsec
 import Text.Parsec.Char
 import Data.List
 
-
-inetroot :: IO (Maybe String)
-inetroot = lookup "INETROOT" <$> getEnvironment
-
-inCorext :: IO Bool
-inCorext = isJust <$> inetroot
 
 -- Assume we are in a corext env with %INETROOT% defined
 aliasPath :: IO FilePath
