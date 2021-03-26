@@ -1,27 +1,20 @@
 module Main where
 
 import CLI.State
-  ( FishyState
-  , cleanState
+  ( cleanState
   , loadState
   , storePath
   )
 
 import CLI.Loop
-import CLI.ShellMode
 import CLI.Modes
 import CLI.Types
 import Test.Trie
   
 import Control.Monad
-import Control.Monad.Trans.Class
 import Control.Monad.Trans.State.Strict
 import Data.Semigroup ((<>))
-import Data.List.Zipper (empty)
-import System.Console.ANSI
 import System.Directory
-import System.Environment
-import System.IO
 import Options.Applicative hiding (empty)
 import qualified Data.Map.Lazy as Map
 
@@ -74,17 +67,18 @@ main = do
   putStrLn entryString
 
   -- Load state from file unless clearHistory is set
-  state <- if getClearHistoryOption options 
+  initState <- if getClearHistoryOption options 
     then cleanState debug verbose [] Map.empty []
     else loadState debug verbose
 
-  runStateT (loop (lookupMode ShellMode)) state
+  runStateT (loop (lookupMode ShellMode)) initState
   return ()
 
 entryString :: String
-entryString = "Fishy v0.4.04     >°))))<"
+entryString = "Fishy v0.4.05     >°))))<"
 
 -- Release notes
+-- 0.4.05: fix history rewriting, add framework for git completions
 -- 0.4.04: fix parsing of xap aliases
 
 entryString2 :: String

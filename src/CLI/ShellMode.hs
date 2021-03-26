@@ -10,21 +10,21 @@ import CLI.Helpers
 import CLI.ShellMode.CompletionHandler
 import CLI.ShellMode.Effect
 import CLI.ShellMode.Draw
-import CLI.SearchMode (searchDraw)
+import CLI.SearchMode()
 
-import Search
+import Search()
 
 import System.Console.ANSI
 import Control.Monad (when)
 import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
 import Data.List.Zipper (Zipper (..), toList)
-import Data.List (nub, (\\))
+import Data.List (nub)
+import Data.Maybe (maybeToList)
 import System.Console.Terminal.Size
-import System.Directory
 
 import Complete
-import Complete.String
+import Complete.String()
 
 shellUpdate :: CommandInput -> FishyMonad (Maybe CLIMode)
 shellUpdate Exit = return Nothing
@@ -40,18 +40,11 @@ shellUpdate command = do
     cachedCompletionResult
     command
   
-  let rebuildCompleters = getRebuildCompleters commandResult
-      nextMode = if getExit commandResult
-        then Nothing
-        else Just ShellMode
-
   modify (\s -> s { getBufferedCommands = getNewCommands commandResult
           , getCurrentDir = getCommandLocation commandResult }
           )
 
-  ch' <- if getRebuildCompleters commandResult 
-      -- Update completion handler
-    then do
+  when (getRebuildCompleters commandResult) $ do
       s <- get
       ch' <- liftIO $ updateCompletionHandler 
         (getCompletionHandler s)
@@ -63,10 +56,6 @@ shellUpdate command = do
 
       let s' = s {getCompletionHandler = ch', getCachedCompletions = completionResult}
       put s'
-      return ch'
-    else (getCompletionHandler <$> get)
-
-  s' <- get
 
   -- If we have performed some non-trivial action
   -- save the state
@@ -76,9 +65,14 @@ shellUpdate command = do
       saveState'
 
   -- log the completions
+  -- s' <- get
   -- getDebug s' ?-> return ()
     --cd <- liftIO $ getCurrentDirectory
     --liftIO $ logCompletions (toList $ getPrompt s') cd completionResult
+
+  let nextMode = if getExit commandResult
+        then Nothing
+        else Just ShellMode
 
   return nextMode
 
@@ -89,7 +83,6 @@ drawShellMode :: Int -> (Zipper Char) -> StringCompletion -> Color -> IO Int
 drawShellMode lastHeight prompt (Completion completion _) color = do
   Just (Window _ ww) <- size
   preprompt <- prePrompt
-  cd <- getCurrentDirectory
   let completionLen = length completion
   -- Show all tries
   drawCompletion lastHeight preprompt prompt completion color
@@ -101,7 +94,7 @@ drawState :: CompletionHandlerResult -> FishyMonad ()
 drawState result = do
   state <- get
   let lastHeight = lastPromptHeight state
-      prompt@(Zip promptL promptR) = getPrompt state
+      prompt@(Zip _ promptR) = getPrompt state
       (completion, color) = cycledCompletionResult (getCompletionHandler state) result
       -- Warning! Hacks!
       completion' = if 
@@ -126,16 +119,21 @@ saveState' = do
 addToHistory :: [String] -> FishyMonad ()
 addToHistory newCommands = do
   state <- get
+  ifDebug $ putStrLn $ "\nAdding to history: " ++ show newCommands
+  ifDebug $ putStrLn $ "\nCurrent history: " ++ (show $ getHistoryLogs state)
   let (Zip historyL historyR) = getHistoryLogs state
-      -- hi = getHistoryIndex state
+      stashCommands = maybeToList $ getHistoryStash state
+      flattenedHistory = reverse historyR ++ stashCommands ++ historyL
       historyL' = if (all whitespace newCommands) 
-        then reverse historyR ++ historyL
+        then flattenedHistory
         else case historyL of 
-          (x:xs) -> (filter (/= x) newCommands) ++ (reverse historyR) ++ historyL
-          _ -> nub newCommands ++ reverse historyR
+          (x:_) -> (filter (/= x) newCommands) ++ flattenedHistory
+          _ -> nub newCommands ++ flattenedHistory
+
+  ifDebug $ putStrLn $ "\nNew commands: " ++ (show historyL') ++ " || " ++ (show historyR)
   put state
-    { getHistoryLogs = Zip (historyL' ++ historyR) []
-    --, getHistoryIndex = foldl hiNewCommand hi newCommands
+    { getHistoryLogs = Zip historyL' []
+    , getHistoryStash = Nothing
     }
 
 whitespace :: String -> Bool

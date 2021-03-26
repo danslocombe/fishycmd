@@ -1,5 +1,10 @@
 
-Fix "editing history"
-Fix wrap rendering
+When going back to a previous command, executing then running more commands after you lose the command history you browsed past
 
-Opening utah one time lost all suggestions , dont know why
+State saving is lossy
+
+Ordering doesn't feel right in many cases, address
+
+special cases for git
+Store branches as suggestions
+special cases for "origin"

@@ -2,18 +2,18 @@
 {-# LANGUAGE RankNTypes #-}
 module CLI.ShellMode.Effect where
 
-import Complete.String
 import Complete
+import Complete.String()
+
 import CLI.State
 import CLI.Types
 import CLI.Helpers
 import CLI.ShellMode.CompletionHandler
 import CLI.ShellMode.FishyCommand
-import CLI.ShellMode.Prompt
 
 import System.Signal
 import Data.Maybe
-import Data.List (nub, lookup)
+import Data.List (nub)
 import Data.Char (isSpace)
 import Data.List.Split
 import System.Process
@@ -23,7 +23,6 @@ import Control.Monad.IO.Class
 import Control.Monad.RWS.Class
 import System.IO
 import Data.List.Zipper hiding (insert)
-import qualified Data.Map.Lazy as Map
 
 import Corext.AliasCompleter
 
@@ -34,13 +33,13 @@ execCommand :: String -> FishyMonad Bool
 execCommand "" = liftIO $ putStr "\n" >> return False
 execCommand c = case splitOn " " c of 
   -- Extract first 'word'
-  (x:xs) -> do
+  (commandWord:commandWords) -> do
     liftIO $ putStr "\n"
     -- Try and match against a fishy command, otherwise act normal
-    let fishy = Prelude.lookup x fishyCommandMap
+    let fishy = Prelude.lookup commandWord fishyCommandMap
     ret <- case fishy of
       -- Run fishycommand
-      Just fishyCmd -> runFishy xs fishyCmd
+      Just fishyCmd -> runFishy commandWords fishyCmd
       Nothing -> do 
 
         -- Setup flags for process
@@ -78,7 +77,6 @@ processCommand aliases handlerResult ci = do
   initialLocation <- liftIO $ getCurrentDirectory
   let s = toList $ getPrompt state
       (Zip promptL promptR) = getPrompt state
-      historyLogs = getHistoryLogs state
       defaultReturn = return $ CommandProcessResult [] initialLocation True False
       (Completion completion _, _) = firstCompletionResult handlerResult
 
@@ -102,7 +100,6 @@ processCommand aliases handlerResult ci = do
 
     -- Run what is entered by user
     Run -> do
-      dirToInsert <- liftIO $ getCurrentDirectory
       let trim :: String -> String
           trim = f . f
             where f = reverse . dropWhile isSpace
@@ -119,6 +116,7 @@ processCommand aliases handlerResult ci = do
       liftIO clearFromCursorToLineEnd
       put state 
         { getPrompt = Zip (reverse completion) []
+        , getHistoryStash = Nothing
         , getControlPrepped = False}
       defaultReturn
       
@@ -142,10 +140,12 @@ processCommand aliases handlerResult ci = do
           -- Cycle to next completion
           state { getCompletionHandler = handler'
                 , getPrompt = Zip (reverse compNext) promptR
+                , getHistoryStash = Nothing
                 , getControlPrepped = False }
         else
           -- Complete to partial
           state { getPrompt = Zip (reverse compNowSplit) promptR
+                , getHistoryStash = Nothing
                 , getControlPrepped = False }
       liftIO $ setCursorColumn 0
       liftIO clearFromCursorToLineEnd
@@ -153,7 +153,7 @@ processCommand aliases handlerResult ci = do
 
     -- Execute some other command
     Execute command -> do
-      exitcode <- liftIO $ system command
+      _exitcode <- liftIO $ system command
       defaultReturn
 
     -- Some inputs (up, down, etc) are represented by two characters
@@ -181,41 +181,37 @@ processCommand aliases handlerResult ci = do
 
 -- TODO factor out some of following common in both functions
 backHistory :: FishyMonad ()
-backHistory = do
-    state <- get
-    let s = toList $ getPrompt state
-        history = getHistoryLogs state
-        (history', mText) = popBotZipper history
-        (text, history'') = case mText of
-          Just newText -> (newText, case s of
-            "" -> history'
-            _  -> pushTopZipper s history')
-          Nothing      -> (s, history')
-        prompt = Zip (reverse text) []
-    put state { getHistoryLogs = history'', getPrompt = prompt }
+backHistory = changeHistory pushTopZipper popBotZipper
 
 forwardHistory :: FishyMonad ()
-forwardHistory = do
-    state <- get
-    let s = toList $ getPrompt state
-        history = getHistoryLogs state
-        (history', mText) = popTopZipper history
-        (text, history'') = case mText of
-          Just newText -> (newText, case s of
-            "" -> history'
-            _  -> pushBotZipper s history')
-          Nothing      -> (s, history')
-        prompt = Zip (reverse text) []
-    put state { getHistoryLogs = history'', getPrompt = prompt }
+forwardHistory = changeHistory pushBotZipper popTopZipper
 
+type PushNewHistory = String -> Zipper String -> Zipper String
+type PopHistory = Zipper String -> (Zipper String, Maybe String)
+changeHistory :: PushNewHistory -> PopHistory -> FishyMonad ()
+changeHistory modifyHistory getFromHistory = do
+    state <- get
+    let stash = maybe "" id $ getHistoryStash state
+        history = getHistoryLogs state
+        (history', mText) = getFromHistory history
+        (text, history'') = case mText of
+          Just newText -> (newText, case stash of
+            "" -> history'
+            _  -> modifyHistory stash history')
+          Nothing      -> (stash, history')
+        prompt = Zip (reverse text) []
+    put state { getHistoryLogs = history'', getPrompt = prompt, getHistoryStash = Just text }
 
 -- This is incredibly hacky
+-- We have a whitelist of file extensions where running will execute in the background
+-- Main use for this is running "Example.csproj" to open in visual studio
 blockForCommand :: String -> IO Bool
 blockForCommand c = do
   exists <- doesFileExist c
   let hasAsyncExt = (maybe False (`elem` asyncExtensions) (extension c))
   return $ not $ exists && hasAsyncExt
 
+asyncExtensions :: [String]
 asyncExtensions = ["csproj", "sln", "txt", "cs", "bond", "ini", "log"]
 
 extension :: String -> Maybe String

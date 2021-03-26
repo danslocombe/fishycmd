@@ -9,7 +9,7 @@ import System.Console.ANSI.Types
 data Completion a = Completion [a] Int deriving Show
 
 instance Eq a => Eq (Completion a) where
-  (Completion x n) == (Completion y m) = x == y
+  (Completion x _n) == (Completion y _m) = x == y
 
 data CompleterResult a = CompleterResult [Completion a] Color deriving Show
 
@@ -25,9 +25,11 @@ type StringCompletion = Completion Char
 
 type StringCompleterResult = CompleterResult Char
 
-data FishyCompleterResult = FishyCompleterResult StringCompleterResult CompleterName
+data FishyCompleterResult = FishyCompleterResult StringCompleterResult CompleterName 
+  deriving Show
 
 data CompleterName = NameLocalHistoryCompleter
+                   | NameGitCompleter
                    | NameFileCompleter
                    | NameGlobalHistoryCompleter
                    | NamePathCompleter deriving (Eq, Show)

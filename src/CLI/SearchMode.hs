@@ -4,7 +4,6 @@
 
 module CLI.SearchMode where
 
-
 import CLI.State
 import CLI.Types
 import CLI.Helpers

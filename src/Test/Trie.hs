@@ -132,6 +132,6 @@ prop_willGivePrefixes s0 (NonEmpty s1) (NonEmpty s2) w0 w1 =
       t0 = insertN w0 abcde []
       t  = insertN w1 abcd  t0
 
-prop_suggestPrefix :: [StringTrie] -> NonEmptyStr -> Bool
-prop_suggestPrefix st (NonEmpty p) = 
+prop_suggestPrefix :: NonEmptyStr -> Bool
+prop_suggestPrefix (NonEmpty p) = 
   p == (cwToString $ (lookupTrie p $ insertTrie p []))

@@ -42,6 +42,7 @@ executable trie
                      , Complete.String
                      , Complete.Trie
                      , Complete.Types
+                     , Complete.Git
                      , CLI.State
                      , CLI.KeyPress
                      , CLI.Types
