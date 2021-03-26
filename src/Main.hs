@@ -75,9 +75,10 @@ main = do
   return ()
 
 entryString :: String
-entryString = "Fishy v0.4.04     >°))))<"
+entryString = "Fishy v0.4.05     >°))))<"
 
 -- Release notes
+-- 0.4.05: fix history rewriting, add framework for git completions
 -- 0.4.04: fix parsing of xap aliases
 
 entryString2 :: String
