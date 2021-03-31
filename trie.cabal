@@ -57,6 +57,7 @@ executable trie
                      , CLI.ShellMode.Prompt
                      , CLI.ShellMode.FishyCommand
                      , Corext.AliasCompleter
+                     , Corext.Helpers
                      , Test.Trie
                      , Search
   extra-lib-dirs:      lib
