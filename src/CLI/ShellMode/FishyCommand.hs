@@ -9,16 +9,18 @@ import Text.Parsec
 import System.Directory
 import Data.List (intersperse, union)
 import System.Environment
+import System.Process (system)
 import Control.Monad.IO.Class
 
 -- We have an idea of 'fishy' commands that hold side effects
 -- these are handled by the shell rather than external calls
 
-data FishyCommand = CD | EXIT
+data FishyCommand = CD | EXIT | LS
 
 fishyCommandMap :: [(String, FishyCommand)]
 fishyCommandMap = 
   [ ("cd", CD)
+  , ("ls", LS)
   , ("exit", EXIT)
   ]
 
@@ -31,6 +33,7 @@ runFishy args cmd = do
                        [""] -> ""
                        xs -> foldr1 (\x y -> x ++ " " ++ y) xs)
       in fishyCD arg >> (return False)
+    LS -> liftIO (system "dir") >> return False
     EXIT -> return True
 
 fishyCD :: String -> FishyMonad ()
