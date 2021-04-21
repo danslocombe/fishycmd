@@ -1,4 +1,4 @@
-module CLI.ShellMode.Draw (prePrompt, drawCompletion) where
+module CLI.ShellMode.Draw (prePrompt, generatePrePromptSafe, possibleShortenedPrefixes, drawCompletion) where
 
 import Complete.String
 import CLI.Helpers
@@ -28,47 +28,45 @@ removeVowels :: String -> Maybe String
 removeVowels [] = Nothing
 removeVowels (x:xs) = Just $ x : (filter (\x -> not $ x `elem` "aeiouAEIOU") xs)
 
+-- Build up a list of preprompts to try until we get one under the character limit
+-- EG
+-- C:\Usrs\dsloom\Folder
+-- C:\U\d\Folder
+possibleShortenedPrefixes :: [String] -> [Maybe [String]]
+possibleShortenedPrefixes chopped =
+      -- Half de-voweled, half normal
+      [ (sequence $ removeVowels <$> half0) +^+ (Just half1)
+      -- All de-voweled
+      , sequence $ removeVowels <$> chopped'
+      -- Half with just first letter, half de-voweled
+      , (sequence $ safeFirst <$> half0) +^+ (sequence $ removeVowels <$> half1)
+      -- All first letter
+      , sequence $ safeFirst <$> chopped'
+      ]
+  where
+    -- Assume n > 0
+    n = length chopped
+    chopped' = init chopped
+    (half0, half1) = splitAt (n `div` 2) chopped'
+
 -- Generate a 'pre prompt' by compressing the current path down
 generatePrePromptSafe :: String -> Maybe String
 generatePrePromptSafe p = do
   let chopped = splitOn  "\\" p
 
   -- Abort on length 0
-  n <- case length chopped of 
+  _ <- case length chopped of 
     0 -> Nothing
-    x -> Just x
+    _ -> Just ()
 
-  -- Well defined as we know |chopped| > 0
-  let chopped' = init chopped
-      cd = last chopped
-
-      (half0, half1) = splitAt (n `div` 2) chopped'
-
-      safeFirst :: [a] -> Maybe [a]
-      safeFirst = safeHead <$> return
-
-      -- Build up a list of preprompts to try until we get one under the character limit
-      -- EG
-      -- C:\Usrs\dsloom\Folder
-      -- C:\U\d\Folder
-      toTry :: [Maybe [String]]
-      toTry =
-        -- Half de-voweled, half normal
-        [ (sequence $ removeVowels <$> half0) +^+ (Just half1)
-        -- All de-voweled
-        , sequence $ removeVowels <$> chopped'
-        -- Half with just first letter, half de-voweled
-        , (sequence $ safeFirst <$> half0) +^+ (sequence $ removeVowels <$> half1)
-        -- All first letter
-        , sequence $ safeFirst <$> chopped'
-        ]
-
-  toTry' <- sequence toTry
-  let applied = map (concat . intersperse "\\") toTry' :: [String]
+  toTry <- sequence $ possibleShortenedPrefixes chopped
+  let applied = map (concat . intersperse "\\") toTry :: [String]
 
   let base = case dropWhile (\x -> length x > promptTargetLength) applied of
-        [] -> concat $ intersperse "\\" $ last toTry'
+        [] -> concat $ intersperse "\\" $ last toTry
         x:_ -> x
+  
+  let cd = last chopped
 
   return $ base ++ "\\" ++ cd
 

@@ -75,11 +75,19 @@ main = do
   return ()
 
 entryString :: String
-entryString = "Fishy v0.4.06     >°))))<"
+entryString = "Fishy v0.4.07     >°))))<"
 
+--------------------------------------------------------------------
 -- Release notes
+--------------------------------------------------------------------
+-- 0.4.07: fix bug in current dir prompt rendering
+--         fix crash when cding into a file
+--         pass ls args in fishycommand to dir
+--------------------------------------------------------------------
 -- 0.4.06: hardcoding fishycommand for 'ls'
+--------------------------------------------------------------------
 -- 0.4.05: fix history rewriting, add framework for git completions
+--------------------------------------------------------------------
 -- 0.4.04: fix parsing of xap aliases
 
 entryString2 :: String

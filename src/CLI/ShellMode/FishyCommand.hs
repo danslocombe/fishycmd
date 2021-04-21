@@ -15,41 +15,43 @@ import Control.Monad.IO.Class
 -- We have an idea of 'fishy' commands that hold side effects
 -- these are handled by the shell rather than external calls
 
-data FishyCommand = CD | EXIT | LS
+data FishyCommand 
+  = CD [String]
+  | EXIT
+  | LS [String]
 
-fishyCommandMap :: [(String, FishyCommand)]
-fishyCommandMap = 
-  [ ("cd", CD)
-  , ("ls", LS)
-  , ("exit", EXIT)
-  ]
 
-runFishy :: [String] -> FishyCommand -> FishyMonad Bool
-runFishy args cmd = do
+tryGetFishyCommand :: String -> [String] ->  Maybe FishyCommand
+tryGetFishyCommand "cd" args = Just $ CD args
+tryGetFishyCommand "exit" _ = Just EXIT
+tryGetFishyCommand "ls" args = Just $ LS args
+tryGetFishyCommand _ _ = Nothing
+
+joinArgs :: [String] -> String
+joinArgs [] = ""
+joinArgs [""] = ""
+joinArgs xs = foldr1 (\x y -> x ++ " " ++ y) xs
+
+runFishy :: FishyCommand -> FishyMonad Bool
+runFishy cmd = do
   ifDebug $ putStrLn "Running fishy command..."
   case cmd of
-    CD -> let arg = (case args of
-                       [] -> ""
-                       [""] -> ""
-                       xs -> foldr1 (\x y -> x ++ " " ++ y) xs)
-      in fishyCD arg >> (return False)
-    LS -> liftIO (system "dir") >> return False
+    (CD args) -> (fishyCD $ joinArgs args) >> (return False)
+    (LS args) -> liftIO (system $ "dir " ++ joinArgs args) >> return False
     EXIT -> return True
 
 fishyCD :: String -> FishyMonad ()
 fishyCD "" = liftIO $ (putStrLn =<< getCurrentDirectory)
 fishyCD rawArg = do 
-  ifDebug $ putStrLn ("Cd ing to \"" ++ rawArg ++ "\"")
+  ifDebug $ putStrLn ("CDing to \"" ++ rawArg ++ "\"")
   x <- liftIO $ sequence $ processCDArg rawArg
   case x of
     Just arg -> do
       let arg' = reverse $ dropWhile (==' ') $ reverse arg -- todo make whitespace stripping nicer
-      ifDebug $ putStrLn ("Cd ing to \"" ++ arg' ++ "\"")
-      exists <- liftIO $ doesPathExist arg'
+      ifDebug $ putStrLn ("CDing to \"" ++ arg' ++ "\"")
+      exists <- liftIO $ doesDirectoryExist arg'
       if exists
-      then do
-        liftIO $ setCurrentDirectory arg'
-        return ()
+      then liftIO $ setCurrentDirectory arg'
       else liftIO $ putStrLn "Error: fishy directory"
     Nothing -> liftIO $ putStrLn "Error: could not parse directory"
 

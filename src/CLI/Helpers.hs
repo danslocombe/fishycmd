@@ -48,15 +48,18 @@ logCompletions prefix cd completions = do
 (!?!) :: [a] -> Int -> Maybe a
 (!?!) [] _ = Nothing
 (!?!) (x:_) 0 = Just x
-(!?!) (x:xs) n = xs !?! (n-1)
+(!?!) (_:xs) n = xs !?! (n-1)
+
+safeFirst :: [a] -> Maybe [a]
+safeFirst xs = return <$> safeHead xs
 
 safeHead :: [a] -> Maybe a
 safeHead []     = Nothing
-safeHead (x:xs) = Just x
+safeHead (x:_) = Just x
 
 safeTail :: [a] -> Maybe [a]
 safeTail []     = Nothing
-safeTail (x:xs) = Just xs
+safeTail (_:xs) = Just xs
 
 -- Functions for treating zipper as two stacks
 

@@ -36,10 +36,10 @@ execCommand c = case splitOn " " c of
   (commandWord:commandWords) -> do
     liftIO $ putStr "\n"
     -- Try and match against a fishy command, otherwise act normal
-    let fishy = Prelude.lookup commandWord fishyCommandMap
+    let fishy = tryGetFishyCommand commandWord commandWords
     ret <- case fishy of
       -- Run fishycommand
-      Just fishyCmd -> runFishy commandWords fishyCmd
+      Just fishyCmd -> runFishy fishyCmd
       Nothing -> do 
 
         -- Setup flags for process
