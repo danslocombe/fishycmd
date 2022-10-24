@@ -75,10 +75,12 @@ main = do
   return ()
 
 entryString :: String
-entryString = "Fishy v0.4.07     >°))))<"
+entryString = "Fishy v0.4.08     >°))))<"
 
 --------------------------------------------------------------------
 -- Release notes
+--------------------------------------------------------------------
+-- 0.4.08: fix bug in trie ordering
 --------------------------------------------------------------------
 -- 0.4.07: fix bug in current dir prompt rendering
 --         fix crash when cding into a file

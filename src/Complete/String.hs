@@ -40,6 +40,8 @@ instance Trieable Char CharWeight where
       maxorzero [] = 0
       maxorzero xs = maximum xs
 
+  nodeOrdering (CharWeight _ x) (CharWeight _ y) = compare y x
+
 -- --- --- -- -- -  - - -- - --- -- --- --- -- 
 
 stripQuotes :: String -> String

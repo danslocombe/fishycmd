@@ -8,7 +8,7 @@ module Complete.Trie where
 
 import GHC.Generics
 import Data.Serialize
-import Data.List (sort)
+import Data.List (sortBy)
 
 data Trie a = TrieNode 
   { getData :: a
@@ -34,6 +34,8 @@ class Trieable a b | b -> a where
   -- we have input abc, when should we return the former and when the latter?
   -- finalHeuristic determines when we return the truncated string
   finalHeuristic :: Trie b -> Bool
+
+  nodeOrdering :: b -> b -> Ordering
 
 instance (Serialize a) => Serialize (Trie a)
 
@@ -71,7 +73,7 @@ insertTrie (x:xs) ts = ret
             , getChildren = insertTrie xs [] 
             , getFinal = if null xs then 1 else 0
             }]
-          else ts'
+          else sortBy (\x y -> nodeOrdering (getData x) (getData y)) ts'
 
 allLists :: forall a b. (Trieable a b) => [Trie b] -> [[b]]
 allLists ts = concatMap f ts
